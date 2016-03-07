@@ -69,7 +69,9 @@ func (dispatcher *Dispatcher) Start() {
 				}
 				dispatcher.mutex.Lock()
 				for _, c := range dispatcher.channels[message.Address] {
-					c <- message
+					go func(target chan *Message) {
+						target <- message
+					}(c)
 				}
 				dispatcher.mutex.Unlock()
 			}

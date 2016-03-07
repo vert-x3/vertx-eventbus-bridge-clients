@@ -74,7 +74,8 @@ go func() {
 ## Documentation
 
 You should read the API documentation to understand all operations, and especially the concurrency
-assumptions and requirements.
+assumptions and requirements:
+[https://godoc.org/github.com/jponge/vertx-go-tcp-eventbus-bridge/eventbus](https://godoc.org/github.com/jponge/vertx-go-tcp-eventbus-bridge/eventbus)
 
 A sample Vert.x / Java application is given in [vertx-sample-app/](vertx-sample-app/).
 

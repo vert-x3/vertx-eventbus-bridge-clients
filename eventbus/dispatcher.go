@@ -102,6 +102,7 @@ func (dispatcher *Dispatcher) Register(address string, chanSize uint32) (<-chan 
 	}
 	channel := make(chan *Message, chanSize)
 	dispatcher.mutex.Lock()
+	defer dispatcher.mutex.Unlock()
 	if _, present := dispatcher.channels[address]; !present {
 		err = dispatcher.eventBus.Register(address)
 		if err != nil {
@@ -110,7 +111,6 @@ func (dispatcher *Dispatcher) Register(address string, chanSize uint32) (<-chan 
 		dispatcher.channels[address] = map[string]chan *Message{}
 	}
 	dispatcher.channels[address][id] = channel
-	dispatcher.mutex.Unlock()
 	return channel, id, nil
 }
 

@@ -98,12 +98,12 @@ func (eventBus *EventBus) Unregister(address string) error {
 }
 
 func (eventBus *EventBus) send(message *Message) error {
-	eventBus.sendMutex.Lock()
-	defer eventBus.sendMutex.Unlock()
 	bytes, err := json.Marshal(message)
 	if err != nil {
 		return err
 	}
+	eventBus.sendMutex.Lock()
+	defer eventBus.sendMutex.Unlock()
 	size := int32(len(bytes))
 	if err = binary.Write(eventBus.connection, binary.BigEndian, size); err != nil {
 		return err

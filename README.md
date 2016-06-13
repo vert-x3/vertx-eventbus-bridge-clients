@@ -7,10 +7,6 @@ to Do
 
 1) error handling 
 
-2) unit testing
-
-3) send with timeout
-
 example : 
 server-timekeeper 
 

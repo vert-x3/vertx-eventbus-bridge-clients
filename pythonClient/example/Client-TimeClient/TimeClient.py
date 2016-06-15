@@ -21,7 +21,7 @@ class TimeClient:
 		if message != None:
 			print(message['body'])
 			
-	#replyHandler for errors
+	#Handler for errors
 	def Handler(self,message):
 		if message != None:
 			print('Update:')

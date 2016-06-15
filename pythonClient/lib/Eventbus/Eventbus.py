@@ -12,14 +12,15 @@ import threading
 #	input parameters
 #		1) host	- String
 #		2) port	- integer(>2^10-1)
-#		3) TimeOut - float
+#		3) TimeOut - float- receive TimeOut
+#		
 #	inside parameters
 #		1) socket
 #		2) handlers - List<String address,array<functions/handler>> 
 #		3) state -integer
 #		4) ReplyHandler - <address,function>
 #		5) socket_is_using - boolean {1: sendFrame, 0: receiving
-#		6) safe_close= boolean
+#		
 #Eventbus state
 #	0 - not connected/failed
 #	1 - connecting
@@ -37,10 +38,13 @@ class Eventbus:
 	safe_close=True
 	
 	#constructor
-	def __init__(self, host='localhost', port=7000, TimeOut=3.0):
+	def __init__(self, host='localhost', port=7000, TimeOut=3.0,TimeInterval=0.1):
 		self.host = host
 		self.port = port
-		self.TimeOut = TimeOut
+		if TimeOut <0.1:
+			self.TimeOut = 0.1
+		else:
+			self.TimeOut = TimeOut
 		
 		#connect
 		try:
@@ -127,7 +131,7 @@ class Eventbus:
 				if self.receive()==False:
 					break
 				
-	def closeConnection(self,timeInterval):
+	def closeConnection(self,timeInterval=30):
 		self.state=3
 		time.sleep(timeInterval)
 		self.sock.close()
@@ -223,7 +227,7 @@ class Eventbus:
 			else :
 				headers=None
 				replyAddress=None
-				timeInterval=0
+				timeInterval=0.01
 			
 			try:
 				if self.Handlers[address] == None:
@@ -239,8 +243,7 @@ class Eventbus:
 			try:
 				self.Handlers[address].append(handler)
 			except Exception as e:
-				print('register error'+str(e))
-			time.sleep(0.1)
+				print('Registration error:'+str(e))
 		else:
 			print('error occured: INVALID_STATE_ERR')
 		

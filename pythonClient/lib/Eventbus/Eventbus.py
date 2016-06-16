@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#This the library for python
+#Jayamine Alupotha
 
 import socket
 import json
@@ -13,7 +13,7 @@ import threading
 #		1) host	- String
 #		2) port	- integer(>2^10-1)
 #		3) TimeOut - float- receive TimeOut
-#		
+#		4) TimeInterval -float -sleep time
 #	inside parameters
 #		1) socket
 #		2) handlers - List<String address,array<functions/handler>> 
@@ -35,14 +35,13 @@ class Eventbus:
 	state = 0
 	ReplyHandler={}
 	writable=True
-	safe_close=True
 	
 	#constructor
-	def __init__(self, host='localhost', port=7000, TimeOut=3.0,TimeInterval=0.1):
+	def __init__(self, host='localhost', port=7000, TimeOut=0.1,TimeInterval=0.1):
 		self.host = host
 		self.port = port
-		if TimeOut <0.1:
-			self.TimeOut = 0.1
+		if TimeOut <0.01:
+			self.TimeOut = 0.01
 		else:
 			self.TimeOut = TimeOut
 		
@@ -103,7 +102,6 @@ class Eventbus:
 							del self.ReplyHandler['address']
 							del self.ReplyHandler['replyHandler']
 					except KeyError:		
-						#edit to pass error
 						print('no handlers for '+message['address'])
 					
 			elif message['type']=='err':
@@ -142,10 +140,6 @@ class Eventbus:
 
 
 #send, receive, register, unregister ------------------------------------------------------------
-
-	def __result(self,state):
-		if state==False:
-			print('error occured:could not send')
 	
 	#address-string
 	#body - json object
@@ -167,20 +161,19 @@ class Eventbus:
 			else :
 				headers=None
 				replyAddress=None
-				timeInterval=0.01
+				timeInterval=self.TimeInterval
 			
 			message=json.dumps({'type':'send','address':address,'replyAddress':replyAddress,'headers':headers,'body':body,})
 			#print('sent'+message)
 			
 			self.writable=True
 			self.sendFrame(message)
-			self.writable=False
 			
 			#replyHandler
 			if replyAddress != None and replyHandler!=None:
 				self.ReplyHandler['address']=replyAddress
 				self.ReplyHandler['replyHandler']=replyHandler
-				
+			self.writable=False	
 			time.sleep(timeInterval)
 		else:
 			print('error occured: INVALID_STATE_ERR')
@@ -229,7 +222,7 @@ class Eventbus:
 			else :
 				headers=None
 				replyAddress=None
-				timeInterval=0.01
+				timeInterval=self.TimeInterval
 			
 			try:
 				if self.Handlers[address] == None:

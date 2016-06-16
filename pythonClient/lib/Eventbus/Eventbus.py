@@ -93,6 +93,12 @@ class Eventbus:
 					if self.Handlers[message['address']] != None:
 						for handler in self.Handlers[message['address']]:
 							handler(self,message)
+							
+					#reply handlers		
+					if self.ReplyHandler['address']== message['address']:
+							self.ReplyHandler['replyHandler'](self,None,message)
+							del self.ReplyHandler['address']
+							del self.ReplyHandler['replyHandler']
 					
 				except KeyError:	
 					#replyHandler

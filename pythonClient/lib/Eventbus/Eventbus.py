@@ -19,7 +19,7 @@ import threading
 #		2) handlers - List<String address,array<functions/handler>> 
 #		3) state -integer
 #		4) ReplyHandler - <address,function>
-#		5) socket_is_using - boolean {1: sendFrame, 0: receiving
+#		5) writable - boolean {1: sendFrame, 0: receiving
 #		
 #Eventbus state
 #	0 - not connected/failed
@@ -34,7 +34,7 @@ class Eventbus:
 	Handlers = {}
 	state = 0
 	ReplyHandler={}
-	socket_is_using=True
+	writable=True
 	safe_close=True
 	
 	#constructor
@@ -88,17 +88,12 @@ class Eventbus:
 			#check
 			#print(message)
 			if message['type']== 'message':	
-				#handlers
+					
 				try:
+					#handlers		
 					if self.Handlers[message['address']] != None:
 						for handler in self.Handlers[message['address']]:
 							handler(self,message)
-							
-					#reply handlers		
-					if self.ReplyHandler['address']== message['address']:
-							self.ReplyHandler['replyHandler'](self,None,message)
-							del self.ReplyHandler['address']
-							del self.ReplyHandler['replyHandler']
 					
 				except KeyError:	
 					#replyHandler
@@ -134,7 +129,7 @@ class Eventbus:
 	
 	def receivingThread(self):
 		while self.state <3 : #0,1,2
-			if self.socket_is_using == False:
+			if self.writable == False:
 				if self.receive()==False:
 					break
 				
@@ -177,9 +172,9 @@ class Eventbus:
 			message=json.dumps({'type':'send','address':address,'replyAddress':replyAddress,'headers':headers,'body':body,})
 			#print('sent'+message)
 			
-			self.socket_is_using=True
+			self.writable=True
 			self.sendFrame(message)
-			self.socket_is_using=False
+			self.writable=False
 			
 			#replyHandler
 			if replyAddress != None and replyHandler!=None:
@@ -208,9 +203,9 @@ class Eventbus:
 			else:
 				message=json.dumps({'type':'send','address':address,'replyAddress':address,'headers':headers,'body':body,})
 			
-			self.socket_is_using=True
+			self.writable=True
 			self.sendFrame(message)
-			self.socket_is_using=False
+			self.writable=False
 			
 		else:
 			print('error occured: INVALID_STATE_ERR')
@@ -240,9 +235,9 @@ class Eventbus:
 				if self.Handlers[address] == None:
 					self.Handlers[address]=[]
 					message=json.dumps({'type':'register','address':address,'headers':headers,})
-					self.socket_is_using=True
+					self.writable=True
 					self.sendFrame(message)
-					self.socket_is_using=False
+					self.writable=False
 			except KeyError:
 				self.Handlers[address]=[]
 				

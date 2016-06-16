@@ -54,9 +54,9 @@ class Eventbus:
 			t1.start()
 			self.state = 2 
 		except IOError as e:
-			print( str(e))
+			self.printErr(1,'SEVERE',str(e))
 		except Exception as e:
-			print( str(e))
+			self.printErr('Undefined Error','SEVERE',str(e))
 			
 #Connection send and receive--------------------------------------------------------------------
 
@@ -111,15 +111,15 @@ class Eventbus:
 					del self.ReplyHandler['replyHandler']
 				except:
 					pass
-			#else: unknown type
-				
+			else: 
+				self.printErr(2,'SEVERE','Unknown type')
 			return True
 		except socket.timeout:
 			return True
 		except Exception as e:
 			#1) close socket while thread is running
 			#2) function error in the client code
-			print (str(e))
+			self.printErr('Undefined Error','SEVERE',str(e))
 			return False
 			#send error message
 	
@@ -132,9 +132,15 @@ class Eventbus:
 					break
 				
 	def closeConnection(self,timeInterval=30):
+		if self.state==1:
+			self.sock.close()
+			return
 		self.state=3
 		time.sleep(timeInterval)
-		self.sock.close()
+		try:
+			self.sock.close()
+		except:
+			self.printErr('Undefined Error','SEVERE',str(e))
 		self.state=4
 	
 
@@ -176,7 +182,7 @@ class Eventbus:
 			self.writable=False	
 			time.sleep(timeInterval)
 		else:
-			print('error occured: INVALID_STATE_ERR')
+			self.printErr(3,'SEVERE','INVALID_STATE_ERR')
 			
 	#address-string
 	#body - json object
@@ -201,7 +207,7 @@ class Eventbus:
 			self.writable=False
 			
 		else:
-			print('error occured: INVALID_STATE_ERR')
+			self.printErr(3,'SEVERE','INVALID_STATE_ERR')
 			
 	#address-string
 	#deliveryOption -object
@@ -238,9 +244,9 @@ class Eventbus:
 			try:
 				self.Handlers[address].append(handler)
 			except Exception as e:
-				print('Registration error:'+str(e))
+				self.printErr(4,'SEVERE','Registration failed\n'+str(e))
 		else:
-			print('error occured: INVALID_STATE_ERR')
+			self.printErr(3,'SEVERE','INVALID_STATE_ERR')
 		
 		
 	#address-string
@@ -263,8 +269,18 @@ class Eventbus:
 					self.sendFrame(message)
 				del self.Handlers[address]
 			else:
-				print('error occurred:unknown address')
+				self.printErr(5,'SEVERE','Unknown address:'+address)
 				
 		else:
 			print('error occured: INVALID_STATE_ERR')
 		
+# Errors ------------------------------------------------------------------------------------------
+	#1 - connection errors
+	#2 - unknown type of the received message
+	#3 - invalid state errors
+	#4 - registration failed error
+	#5 - unknown address of un-registeration
+	def printErr(self,No,Category,error):
+		print(No)
+		print(Category)
+		print (error)

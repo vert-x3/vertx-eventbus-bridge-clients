@@ -10,6 +10,7 @@ import threading
 
 #Eventbus constructor
 #	input parameters
+#		1) instance 
 #		1) host	- String
 #		2) port	- integer(>2^10-1)
 #		3) TimeOut - float- receive TimeOut
@@ -37,9 +38,10 @@ class Eventbus:
 	writable=True
 	
 	#constructor
-	def __init__(self, host='localhost', port=7000, TimeOut=0.1,TimeInterval=0.1):
+	def __init__(self,instance, host='localhost', port=7000, TimeOut=0.1,TimeInterval=0.1):
 		self.host = host
 		self.port = port
+		self.this = instance
 		if TimeOut <0.01:
 			self.TimeOut = 0.01
 		else:
@@ -92,21 +94,21 @@ class Eventbus:
 					#handlers		
 					if self.Handlers[message['address']] != None:
 						for handler in self.Handlers[message['address']]:
-							handler(self,message)
+							handler(self.this,message)
 						self.ReplyHandler=None
 					
 				except KeyError:	
 					#replyHandler
 					try:
 						if self.ReplyHandler['address']== message['address']:
-							self.ReplyHandler['replyHandler'](self,None,message)
+							self.ReplyHandler['replyHandler'](self.this,None,message)
 							self.ReplyHandler=None
 					except KeyError:
 						print('no handlers for '+message['address'])
 					
 			elif message['type']=='err':
 				try:
-					self.ReplyHandler['replyHandler'](self,message,None)
+					self.ReplyHandler['replyHandler'](self.this,message,None)
 					self.ReplyHandler=None
 				except:
 					pass
@@ -188,7 +190,7 @@ class Eventbus:
 					break
 				if timeInterval/self.TimeOut == i and self.ReplyHandler !=None:
 					try:
-						self.ReplyHandler['replyHandler'](self,'Time Out Error',None)
+						self.ReplyHandler['replyHandler'](self.this,'Time Out Error',None)
 						self.ReplyHandler=None
 						break
 					except:

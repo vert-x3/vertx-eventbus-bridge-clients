@@ -101,7 +101,7 @@ class Eventbus:
 						if self.ReplyHandler['address']== message['address']:
 							self.ReplyHandler['replyHandler'](self,None,message)
 							self.ReplyHandler=None
-					except KeyError:		
+					except KeyError:
 						print('no handlers for '+message['address'])
 					
 			elif message['type']=='err':
@@ -187,8 +187,12 @@ class Eventbus:
 				if self.ReplyHandler ==None: 
 					break
 				if timeInterval/self.TimeOut == i and self.ReplyHandler !=None:
-					self.ReplyHandler['replyHandler'](self,'Time Out Error',None)
-					self.ReplyHandler=None
+					try:
+						self.ReplyHandler['replyHandler'](self,'Time Out Error',None)
+						self.ReplyHandler=None
+						break
+					except:
+						break
 				i+=1.0
 		else:
 			self.printErr(3,'SEVERE','INVALID_STATE_ERR')

@@ -5,9 +5,17 @@ supports  python 3
 
 to Do
 
-1) system testing
+1) client library- finished -> maintaining
 
-2) Documentation
+3) Error handling - okey -> maintaining
+
+4) unit testing - okey
+
+5) system testing - okey
+
+2) examples - okey
+
+6) Documentation 
 
 examples :
 Simple example,

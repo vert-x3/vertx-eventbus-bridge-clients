@@ -12,9 +12,7 @@ import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.eventbus.bridge.tcp.TcpEventBusBridge;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.eventbus.EventBus;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.Map;
 /**
  *
  * @author jay
@@ -40,7 +38,6 @@ public class Server extends AbstractVerticle{
 	
 	MessageConsumer< JsonObject > consumer=eb.consumer("welcome", message -> {
 		System.out.println("Message body: " + message.body());
-		System.out.println("headers:"+message.headers());
 		String jsonString = "{\"msg\":\"welcome\"}";
 		JsonObject object = new JsonObject(jsonString);
 		message.reply(object);

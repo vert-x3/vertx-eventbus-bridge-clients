@@ -44,7 +44,6 @@ public class TimeKeeper extends AbstractVerticle{
 	
 	eb.consumer("Time", message -> {
 		System.out.println("Get time\n: " + message.body());
-		System.out.println("headers:"+message.headers());
 		Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
         System.out.println( sdf.format(cal.getTime()) );
@@ -55,7 +54,6 @@ public class TimeKeeper extends AbstractVerticle{
 	
 	eb.consumer("Date", message -> {
 		System.out.println("Get date\n: " + message.body());
-		System.out.println("headers:"+message.headers());
 		Date date=new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd");
         System.out.println( sdf.format(date) );

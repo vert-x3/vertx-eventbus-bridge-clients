@@ -249,7 +249,7 @@ class Eventbus:
 			except KeyError:
 				self.Handlers[address]=[]
 				
-			time.sleep(timeInterval)	
+			#time.sleep(timeInterval)	
 			try:
 				self.Handlers[address].append(handler)
 			except Exception as e:

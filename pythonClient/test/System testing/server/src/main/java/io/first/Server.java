@@ -12,7 +12,6 @@ import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.eventbus.bridge.tcp.TcpEventBusBridge;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.eventbus.EventBus;
-import java.util.Map;
 /**
  *
  * @author jay
@@ -24,8 +23,8 @@ public class Server extends AbstractVerticle{
 	TcpEventBusBridge bridge = TcpEventBusBridge.create(
     vertx,
     new BridgeOptions()
-        .addInboundPermitted(new PermittedOptions().setAddress("welcome"))
-        .addOutboundPermitted(new PermittedOptions().setAddress("welcome")));
+        .addInboundPermitted(new PermittedOptions().setAddress("add"))
+        .addOutboundPermitted(new PermittedOptions().setAddress("add")));
 
 	bridge.listen(7000, res -> {
 		if (res.succeeded()) {
@@ -36,9 +35,9 @@ public class Server extends AbstractVerticle{
 	});
 	EventBus eb = vertx.eventBus();
 	
-	MessageConsumer< JsonObject > consumer=eb.consumer("welcome", message -> {
+	MessageConsumer< JsonObject > consumer=eb.consumer("add", message -> {
 		System.out.println("Message body: " + message.body());
-		String jsonString = "{\"msg\":\"welcome\"}";
+		String jsonString = "{\"result\":\"4\"}";
 		JsonObject object = new JsonObject(jsonString);
 		message.reply(object);
 	});

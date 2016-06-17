@@ -1,45 +1,43 @@
 import Eventbus.Eventbus as Eventbus
 import Eventbus.DeliveryOption as DeliveryOption
 import json
+import unittest
 
 #replyHanlder (self,error,message)
 #handlers (self,message)
 
-class Client:
-
-	#replyHandler 
-	def replyhandler(self,error,message):
-		if error != None:
-			print(error)
-		if message != None:
-			print(message['body'])
+class Client(unittest.TestCase):
+	('System Testing')
+	result='0'
 	
 	#Handler for errors and msg
 	def Handler(self,message):
 		if message != None:
 			print(message['body'])
+			self.assertEqual(message['body']['result'],'4');
 			
-	
-eb=Eventbus.Eventbus(Client(),'localhost', 7000)	
+	def test(self):
+		c=Client()
+		eb=Eventbus.Eventbus(self,'localhost', 7000)	
 
-#jsonObject -body
-body={'msg':'hi server!',}
+		#jsonObject -body
+		body={'msg':'add 4 to 0',}
 
-#DeliveryOption
-do=DeliveryOption.DeliveryOption();
-do.addHeader('type','text')
-do.addHeader('size','small')
-do.addReplyAddress('welcome')
-do.setTimeInterval(5) 
+		#DeliveryOption
+		do=DeliveryOption.DeliveryOption();
+		do.addHeader('type','text')
+		do.addHeader('size','small')
+		do.addReplyAddress('add')
+		do.setTimeInterval(5) 
 
-#register handler
-eb.registerHandler('welcome',do,Client.Handler);
+		#register handler
+		eb.registerHandler('add',do,Client.Handler);
 
-#send 
-eb.send('welcome',body,do)
+		#send 
+		eb.send('add',body,do)
 
-#send
-eb.send('ignore',body,do,Client.replyhandler)
+		#close after 5 seconds
+		eb.closeConnection(1)
 
-#close after 5 seconds
-eb.closeConnection(5)
+if __name__ == '__main__':
+		unittest.main()

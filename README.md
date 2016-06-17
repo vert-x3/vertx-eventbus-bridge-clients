@@ -4,12 +4,14 @@ vertx tcp eventbus client module for python
 support  python 3
 
 to Do
+1) system testing
 
-1) error handling 
+2) Documentation
 
-example : 
-server-timekeeper 
+example :
+Simple example
+TimeKeeper
 
-client-timeclient
+
 
 

@@ -99,16 +99,14 @@ class Eventbus:
 					try:
 						if self.ReplyHandler['address']== message['address']:
 							self.ReplyHandler['replyHandler'](self,None,message)
-							del self.ReplyHandler['address']
-							del self.ReplyHandler['replyHandler']
+							self.ReplyHandler=None
 					except KeyError:		
 						print('no handlers for '+message['address'])
 					
 			elif message['type']=='err':
 				try:
 					self.ReplyHandler['replyHandler'](self,message,None)
-					del self.ReplyHandler['address']
-					del self.ReplyHandler['replyHandler']
+					self.ReplyHandler=None
 				except:
 					pass
 			else: 
@@ -177,6 +175,7 @@ class Eventbus:
 			
 			#replyHandler
 			if replyAddress != None and replyHandler!=None:
+				self.ReplyHandler={}
 				self.ReplyHandler['address']=replyAddress
 				self.ReplyHandler['replyHandler']=replyHandler
 			self.writable=False	

@@ -93,6 +93,7 @@ class Eventbus:
 					if self.Handlers[message['address']] != None:
 						for handler in self.Handlers[message['address']]:
 							handler(self,message)
+						self.ReplyHandler=None
 					
 				except KeyError:	
 					#replyHandler
@@ -179,7 +180,16 @@ class Eventbus:
 				self.ReplyHandler['address']=replyAddress
 				self.ReplyHandler['replyHandler']=replyHandler
 			self.writable=False	
-			time.sleep(timeInterval)
+			#time.sleep(timeInterval)
+			i=0.0
+			while timeInterval/self.TimeOut >= i:
+				time.sleep(self.TimeOut)
+				if self.ReplyHandler ==None: 
+					break
+				if timeInterval/self.TimeOut == i and self.ReplyHandler !=None:
+					self.ReplyHandler['replyHandler'](self,'Time Out Error',None)
+					self.ReplyHandler=None
+				i+=1.0
 		else:
 			self.printErr(3,'SEVERE','INVALID_STATE_ERR')
 			

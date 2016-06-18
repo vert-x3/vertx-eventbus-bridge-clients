@@ -3,7 +3,6 @@ vertx tcp eventbus client module for python
 
 supports  python 3
 
-to Do
 
 1) client library- finished -> maintaining
 

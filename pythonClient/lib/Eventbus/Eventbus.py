@@ -38,7 +38,7 @@ class Eventbus:
 	writable=True
 	
 	#constructor
-	def __init__(self,instance, host='localhost', port=7000, TimeOut=0.1,TimeInterval=0.1):
+	def __init__(self,instance, host='localhost', port=7000, TimeOut=0.1,TimeInterval=10.0):
 		self.host = host
 		self.port = port
 		self.this = instance

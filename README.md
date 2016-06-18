@@ -7,15 +7,15 @@ to Do
 
 1) client library- finished -> maintaining
 
-2) Error handling - okey -> maintaining
+2) Error handling - finished -> maintaining
 
-3) unit testing - okey
+3) unit testing - finished
 
-4) system testing - okey
+4) system testing - finished
 
-5) examples - okey
+5) examples - finished
 
-6) Documentation 
+6) Documentation - finished
 
 examples :
 Simple example,

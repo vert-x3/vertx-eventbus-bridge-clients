@@ -10,7 +10,7 @@ class DeliveryOption:
 	('deliveryOption class describe headers and replyAddress')
 	replyAddress = None
 	headers = {}
-	timeInterval=0.01
+	timeInterval=10.0
 	
 	def addHeader(self, header, value):
 		self.headers[header]=value

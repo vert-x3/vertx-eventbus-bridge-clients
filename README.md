@@ -4,6 +4,7 @@ This is a TCP eventbus implementation for python clients. The protocol is quite 
 * 4bytes int32 message length (big endian encoding)
 * json string
 * built-in keys
+
     *type: (String, required) One of "send", "publish", "register", "unregister".
     *headers: (Object, optional) Headers with JSON format. Value of string type is supported.
     *body: (Object, optional) Message content in JSON format.
@@ -14,7 +15,7 @@ example:
 
     class Client():
 	
-	  #Handler for errors and msg
+	  #Handler
 	    def Handler(self,message):
 		    if message != None:
 			    print(message['body']['result'],'4');

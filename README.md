@@ -5,11 +5,15 @@ This is a TCP eventbus implementation for python clients. The protocol is quite 
 * json string
 * built-in keys
 
-    *type: (String, required) One of "send", "publish", "register", "unregister".
-    *headers: (Object, optional) Headers with JSON format. Value of string type is supported.
-    *body: (Object, optional) Message content in JSON format.
-    *address: (String, required) Destination address
-    *replyAddress: (String, optional) Address for replying to. 
+ 1) type: (String, required) One of "send", "publish", "register", "unregister".
+ 
+ 2) headers: (Object, optional) Headers with JSON format. Value of string type is supported.
+ 
+ 3) body: (Object, optional) Message content in JSON format.
+ 
+ 4) address: (String, required) Destination address
+ 
+ 5) replyAddress: (String, optional) Address for replying to. 
 
 example:
 

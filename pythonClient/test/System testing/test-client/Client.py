@@ -1,5 +1,5 @@
-import Eventbus.Eventbus as Eventbus
-import Eventbus.DeliveryOption as DeliveryOption
+import eventbus.Eventbus as Eventbus
+import eventbus.DeliveryOption as DeliveryOption
 import json
 import unittest
 

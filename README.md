@@ -15,6 +15,8 @@ This is a TCP eventbus implementation for python clients. The protocol is quite 
  
  5) replyAddress: (String, optional) Address for replying to. 
  
+ Download: !https://pypi.python.org/pypi/vertx-eventbus/1.0.0
+ 
  See wiki for more information.
 
 example:

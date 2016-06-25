@@ -15,7 +15,7 @@ This is a TCP eventbus implementation for python clients. The protocol is quite 
  
  5) replyAddress: (String, optional) Address for replying to. 
  
- See wiki for more informations.
+ See wiki for more information.
 
 example:
 

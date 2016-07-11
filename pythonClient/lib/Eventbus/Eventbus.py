@@ -11,10 +11,10 @@ import threading
 #Eventbus constructor
 #	input parameters
 #		1) instance 
-#		1) host	- String
-#		2) port	- integer(>2^10-1)
-#		3) TimeOut - float- receive TimeOut
-#		4) TimeInterval -float -sleep time
+#		2) host	- String
+#		3) port	- integer(>2^10-1)
+#		4) TimeOut - float- receive TimeOut
+#		5) TimeInterval -float -sleep time
 #	inside parameters
 #		1) socket
 #		2) handlers - List<String address,array<functions/handler>> 

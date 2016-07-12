@@ -114,9 +114,9 @@ namespace eventbus
     public class Eventbus
     {
         Socket sock = new Socket(AddressFamily.InterNetwork,SocketType.Stream, ProtocolType.Tcp);
-	    Dictionary<String,List<Handlers>> Handlers=new Dictionary<String,List<Handlers>>();
-	    int state = 0;
-	    ReplyHandlers replyHandler;
+	Dictionary<String,List<Handlers>> Handlers=new Dictionary<String,List<Handlers>>();
+	int state = 0;
+	ReplyHandlers replyHandler;
         int TimeOut;
         Thread t ;
         object Lock=new Object();
@@ -235,7 +235,7 @@ namespace eventbus
 
       public void CloseConnection(int timeInterval){
            if(this.state==1)
-            this.sock.Shutdown(SocketShutdown.Both);
+               this.sock.Shutdown(SocketShutdown.Both);
            else{
                Thread.Sleep(timeInterval*1000);
                this.state=3;

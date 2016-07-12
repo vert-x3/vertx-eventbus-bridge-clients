@@ -17,12 +17,10 @@ namespace eventbus
         //create
         public void create(string new_type,string new_address,string new_replyAddress,string new_body){
             if(new_type==null) {
-                //error
-                return;
+                throw new System.ArgumentException("JsonMessage:type cannot be null");
             }
             if(new_address==null) {
-                //error
-                return;
+                throw new System.ArgumentException("JsonMessage:address cannot be null");
             }
             type=new_type;
             address=new_address;
@@ -79,11 +77,6 @@ namespace eventbus
         public bool isNull(){
             if(function==null && address==null) return true;
             return false; 
-        }
-
-        public void setNull(){
-            function=null; 
-            address=null;
         }
     }
 
@@ -144,8 +137,8 @@ namespace eventbus
                 this.state = 2;
                 }
             catch (Exception e){
-                //Edit this
-                PrintError(1,e.ToString());
+                this.state=4;
+                throw new System.Exception("Not connected "+host+" "+port+"\n",e);
             }
         }
 //Connection send and receive--------------------------------------------------------------------
@@ -171,9 +164,8 @@ namespace eventbus
                 int bytesSent2 = sock.Send(utf8.GetBytes(message_s));
                 return true;
             }catch(Exception e){
-                PrintError(2,e.ToString());
+                throw new System.Exception("Can not send the message\n",e);
             }
-            return false;
         }
 
         void receive(){
@@ -194,10 +186,7 @@ namespace eventbus
                             byte[] json=new byte[i];
                             int Json = sock.Receive(json);
                             String message=utf8.GetString(json,0,Json);
-                            //Console.WriteLine(i+" "+message);
-                            //message=message.Replace("\"", "");
-                            //index of type = 1
-                            //index of address+10->index of headers-1
+                        
                             if(message.IndexOf("\"type\":\"message\"")==1){
                                 int l=message.IndexOf("\",\"",18)-11-message.IndexOf("\"address\":");
                                 string address=message.Substring(message.IndexOf("\"address\":")+11,l);
@@ -212,7 +201,6 @@ namespace eventbus
                                         }
                                         if(this.replyHandler.isNull()==false){
                                             if( this.replyHandler.address.Equals(address)==true){
-                                                //Console.WriteLine(2);
                                             }
                                         }
                                     }else if(this.replyHandler.isNull()==false){
@@ -221,7 +209,7 @@ namespace eventbus
                                             clearReplyHandler=true;
                                         }
                                     }else{
-                                        Console.WriteLine("No handlers");
+                                        Console.WriteLine("No handlers to handle this message");
                                     }
                                 }
                             }
@@ -238,8 +226,9 @@ namespace eventbus
                     else if(sock.Poll(100,SelectMode.SelectError)){
                         
                     }
-                }catch(Exception e){
-                    PrintError(3,e.ToString());
+                }
+                catch(Exception e){
+                    PrintError(1,e.ToString());
                 }
             }
         }
@@ -269,7 +258,10 @@ namespace eventbus
 
             while(true){
                 if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
-                    this.sendFrame(message);
+                    try{this.sendFrame(message);}
+                    catch(Exception e){
+                        throw new System.Exception("",e);
+                    }
                     break;
                 }
             }   
@@ -290,7 +282,10 @@ namespace eventbus
             this.replyHandler=replyHandler;
             while(true){
                 if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
-                    this.sendFrame(message);
+                    try{this.sendFrame(message);}
+                    catch(Exception e){
+                        throw new System.Exception("",e);
+                    }
                     break;
                 }
             }
@@ -322,7 +317,10 @@ namespace eventbus
 
             while(true){
                 if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
-                    this.sendFrame(message);
+                    try{this.sendFrame(message);}
+                    catch(Exception e){
+                        throw new System.Exception("",e);
+                    }
                     break;
                 }
             } 
@@ -343,7 +341,10 @@ namespace eventbus
 
                 while(true){
                     if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
-                        this.sendFrame(message);
+                        try{this.sendFrame(message);}
+                        catch(Exception e){
+                            throw new System.Exception("",e);
+                        }
                         break;
                     }
                 }
@@ -372,7 +373,10 @@ namespace eventbus
 
                 while(true){
                     if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
-                        this.sendFrame(message);
+                        try{this.sendFrame(message);}
+                        catch(Exception e){
+                            throw new System.Exception("",e);
+                        }
                         break;
                     }
                 }
@@ -383,7 +387,7 @@ namespace eventbus
         }
 //Errors ------------------------------------------------------------------------------------------
 
-        void PrintError(int code,String error){
+        static void PrintError(int code,String error){
             Console.WriteLine("CODE :"+code);
             Console.WriteLine(error);
         }      

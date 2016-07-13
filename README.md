@@ -1,4 +1,4 @@
-# TCP-eventbus-client-C\#
+# TCP-eventbus-client-C~~#~~
 
 This is a TCP eventbus implementation for C# clients. The protocol is quite simple:
 

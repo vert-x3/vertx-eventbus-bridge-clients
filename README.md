@@ -19,6 +19,7 @@ This is a TCP eventbus implementation for C# clients. The protocol is quite simp
 
 example:
 
+```cs
         public class client
         {
             public static void Main(string[] args){
@@ -45,3 +46,4 @@ example:
                 5);//timeout
           }
         }
+```

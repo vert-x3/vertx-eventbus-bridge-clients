@@ -21,6 +21,7 @@ This is a TCP eventbus implementation for python clients. The protocol is quite 
 
 example:
 
+```python
     class Client():
 	
 	  #Handler
@@ -48,7 +49,7 @@ example:
 
 		#close after 5 seconds
 		eb.closeConnection(5)
-
+```
 
 examples :
 Simple example,

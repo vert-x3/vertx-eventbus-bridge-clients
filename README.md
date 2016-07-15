@@ -47,3 +47,5 @@ example:
           }
         }
 ```
+
+Get from Nuget at https://www.nuget.org/packages/VertxEventbus/1.0.0/

@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Newtonsoft.Json.Linq;
 
 namespace eventbus
 {
@@ -12,10 +13,10 @@ namespace eventbus
         String type;
         String address;
         String replyAddress;
-        String body;
-        String headers;
+        JObject body;
+        JObject headers;
         //create
-        public void create(string new_type,string new_address,string new_replyAddress,string new_body){
+        public void create(string new_type,string new_address,string new_replyAddress,JObject new_body){
             if(new_type==null) {
                 throw new System.ArgumentException("JsonMessage:type cannot be null");
             }
@@ -30,9 +31,13 @@ namespace eventbus
         //to string
         public String getMessage(){
             if(replyAddress==null) replyAddress="null";
-            if(body==null) body="null";
-            return "{\"type\":\""+type+"\",\"address\":\""+address+"\",\"replyAddress\":\""+replyAddress+"\",\"body\":"+body+",\"headers\":{"+headers+"}}";
-            
+            JObject jsonMessage=new JObject();
+            jsonMessage.Add("type",type);
+            jsonMessage.Add("address",address);
+            jsonMessage.Add("replyAddress",replyAddress);
+            jsonMessage.Add("body",body);
+            jsonMessage.Add("headers",headers);
+            return jsonMessage.ToString();
         }
         
         public void setHeaders(Headers h){
@@ -42,35 +47,32 @@ namespace eventbus
 
     //This is the structure for headers
     public struct Headers{
-        String headers;
+        JObject headers;
 
         public void addHeaders(String headerName,String header){
-            if(headers == null){
-                headers="\""+headerName+"\":\""+header+"\"";
-            }else{
-                headers=headers+",\""+headerName+"\":\""+header+"\"";
-            }
+            headers=new JObject();
+            headers.Add(headerName,header);
         }
         //delete headers
         public void deleteHeaders(){
             headers=null;
         }
 
-        public string getHeaders(){
+        public JObject getHeaders(){
             return headers;
         }
     }
 
     //This is the structure for replyHandlers
     public struct ReplyHandlers{
-        Action<bool,string> function;
+        Action<bool,JObject> function;
         public string address;
-        public ReplyHandlers(string address,Action<bool,string> func){
+        public ReplyHandlers(string address,Action<bool,JObject> func){
             this.function=func;
             this.address=address;
         }
 
-        public void handle(bool error,string message){
+        public void handle(bool error,JObject message){
             this.function(error,message);
         }
 
@@ -83,13 +85,13 @@ namespace eventbus
     //This is the structure for Handlers
     public struct Handlers{
         string address;
-        Action<string> function;
-        public Handlers(string address,Action<string> func){
+        Action<JObject> function;
+        public Handlers(string address,Action<JObject> func){
             this.address=address;
             this.function=func;
         }
 
-        public void handle(string message){
+        public void handle(JObject message){
             function(message);
         }
     }
@@ -185,11 +187,10 @@ namespace eventbus
                             int i = BitConverter.ToInt32(length, 0);
                             byte[] json=new byte[i];
                             int Json = sock.Receive(json);
-                            String message=utf8.GetString(json,0,Json);
-                        
-                            if(message.IndexOf("\"type\":\"message\"")==1){
-                                int l=message.IndexOf("\",\"",18)-11-message.IndexOf("\"address\":");
-                                string address=message.Substring(message.IndexOf("\"address\":")+11,l);
+                            String message_string=utf8.GetString(json,0,Json);
+                            JObject message=JObject.Parse(message_string);
+                            if(message.GetValue("type").ToString()=="message"){
+                                string address=message.GetValue("address").ToString();
                                 //Handlers
                                 lock (Lock)
                                 {
@@ -210,7 +211,7 @@ namespace eventbus
                                     }
                                 }
                             }
-                            if(message.IndexOf("\"type\":\"err\"")==1){
+                            if(message.GetValue("type").ToString()=="err"){
                                 this.replyHandler.handle(true,message);
                                 clearReplyHandler=true;
                             }
@@ -248,7 +249,7 @@ namespace eventbus
         #headers- struct Headers
         #replyAddress - string
         */
-        public void send(string address,string body,string replyAddress,Headers headers){
+        public void send(string address,JObject body,string replyAddress,Headers headers){
             JsonMessage message=new JsonMessage();
             message.create("send",address,replyAddress,body);
             message.setHeaders(headers);
@@ -272,7 +273,7 @@ namespace eventbus
         #replyHandler - ReplyHandler
         #timeInterval - int -sec
         */
-        public void send(string address,string body,string replyAddress,Headers headers,ReplyHandlers replyHandler,int timeInterval=10){
+        public void send(string address,JObject body,string replyAddress,Headers headers,ReplyHandlers replyHandler,int timeInterval=10){
             JsonMessage message=new JsonMessage();
             message.create("send",address,replyAddress,body);
             message.setHeaders(headers);
@@ -296,8 +297,12 @@ namespace eventbus
                     timeInterval--;      
                 }
             }
-            if(timeInterval==0)
-                replyHandler.handle(true,"TIME OUT ERROR");
+            if(timeInterval==0){
+                JObject err=new JObject();
+                err.Add("message","TIMEOUT ERROR");
+                replyHandler.handle(true,(new JObject()));
+
+            }
 
             
         }
@@ -307,7 +312,7 @@ namespace eventbus
         #body - json object
         #headers
         */
-        public void publish(string address,string body,Headers headers){
+        public void publish(string address,JObject body,Headers headers){
             JsonMessage message=new JsonMessage();
             message.create("publish",address,null,body);
             message.setHeaders(headers);

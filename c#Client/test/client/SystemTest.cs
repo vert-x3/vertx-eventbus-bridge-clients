@@ -1,6 +1,7 @@
 using eventbus;
 using System;
 using Xunit;
+using Newtonsoft.Json.Linq;
 
 public class SystemTest
 {
@@ -15,15 +16,17 @@ public class SystemTest
 
             Headers h = new Headers();
             h.addHeaders("type", "maths");
+            JObject body_add =new JObject();
+            body_add.Add("message","add");
 
             //sending with time out = 5 secs
             eb.send(
                 "pcs.status",//address
-                "{\"message\":\"add\"}",//body
+                body_add,//body
                 "pcs.status",//reply address
                 h, //headers
                 (new ReplyHandlers("pcs.status",//replyhandler address
-                   new Action<bool, string>( //replyhandler function
+                   new Action<bool, JObject>( //replyhandler function
                        (err, message) =>
                        {
                     if (err == false)
@@ -35,15 +38,17 @@ public class SystemTest
                5);
             Assert.Equal(5, i);
 
+            JObject body_sub =new JObject();
+            body_sub.Add("message","sub");
 
             //sending with default time out 
             eb.send(
                 "pcs.status",//address
-                "{\"message\":\"sub\"}",//body
+                body_sub,//body
                 "pcs.status",//reply address
                 h, //headers
                 (new ReplyHandlers("pcs.status",//replyhandler address
-                   new Action<bool, string>( //replyhandler function
+                   new Action<bool, JObject>( //replyhandler function
                        (err, message) =>
                        {
                     if (err == false)
@@ -61,7 +66,7 @@ public class SystemTest
                 h,
                 (new Handlers(
                     "pcs.status",
-                    new Action<string>(
+                    new Action<JObject>(
                         message =>
                         {
                     SystemTest.i += 5;
@@ -71,10 +76,12 @@ public class SystemTest
             ));
 
             //send a message without a replyhandler
-            eb.send("pcs.status", "{\"message\":\"add\"}", "pcs.status", h);
+            eb.send("pcs.status", body_add, "pcs.status", h);
 
             //publish
-            eb.publish("pcs.status", "{\"message\":\"going to close\"}", h);
+            JObject body_close =new JObject();
+            body_close.Add("message","close");
+            eb.publish("pcs.status", body_close, h);
 
             //close the socket
             eb.CloseConnection(5);

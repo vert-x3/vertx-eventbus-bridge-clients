@@ -1,83 +1,93 @@
 using eventbus;
 using System;
-
+using Newtonsoft.Json.Linq;
 
 public class client
 {
     public static int i=0;
     public static void Main(string[] args){
-     try{
-     eventbus.Eventbus eb=new eventbus.Eventbus();
-    
-     Headers h=new Headers();
-     h.addHeaders("type","maths");
+     try
+        {
+            eventbus.Eventbus eb = new eventbus.Eventbus();
 
-     //sending with time out = 5 secs
-     eb.send(
-         "pcs.status",//address
-         "{\"message\":\"add\"}",//body
-         "pcs.status",//reply address
-         h, //headers
-         (new ReplyHandlers("pcs.status",//replyhandler address
-            new Action<bool,string>( //replyhandler function
-                (err,message)=>{
-                    Console.WriteLine("replyhandler:"+message);
-                    if(err==false)
-                        client.i+=5;
-                }
-            )
-         )
-        ),
-        5);
-        Console.WriteLine("i :"+i);
+            Console.WriteLine("i:"+client.i);
 
-     //sending with default time out 
-     eb.send(
-         "pcs.status",//address
-         "{\"message\":\"sub\"}",//body
-         "pcs.status",//reply address
-         h, //headers
-         (new ReplyHandlers("pcs.status",//replyhandler address
-            new Action<bool,string>( //replyhandler function
-                (err,message)=>{
-                    Console.WriteLine("replyhandler:"+message);
-                    if(err==false)
-                        client.i-=5;
-                }
-            )
-         )
-        ));
+            Headers h = new Headers();
+            h.addHeaders("type", "maths");
+            JObject body_add =new JObject();
+            body_add.Add("message","add");
 
-        Console.WriteLine("i :"+i);
+            //sending with time out = 5 secs
+            eb.send(
+                "pcs.status",//address
+                body_add,//body
+                "pcs.status",//reply address
+                h, //headers
+                (new ReplyHandlers("pcs.status",//replyhandler address
+                   new Action<bool, JObject>( //replyhandler function
+                       (err, message) =>
+                       {
+                    if (err == false)
+                               client.i += 5;
+                       }
+                   )
+                )
+               ),
+               5);
+            
+            Console.WriteLine("i:"+client.i);
 
-     
-    eb.register(
-        "pcs.status",
-        h,
-        (new Handlers(
-            "pcs.status",
-            new Action<string>(
-                message=>{
-                    Console.WriteLine(message);
-                    client.i+=5;
-                }
-            )
-        )
-    ));
+            JObject body_sub =new JObject();
+            body_sub.Add("message","sub");
 
-     //send a message without a replyhandler
-     eb.send("pcs.status","{\"message\":\"add\"}","pcs.status",h);
-    
-     //publish
-     eb.publish("pcs.status","{\"message\":\"going to close\"}",h);
+            //sending with default time out 
+            eb.send(
+                "pcs.status",//address
+                body_sub,//body
+                "pcs.status",//reply address
+                h, //headers
+                (new ReplyHandlers("pcs.status",//replyhandler address
+                   new Action<bool, JObject>( //replyhandler function
+                       (err, message) =>
+                       {
+                    if (err == false)
+                               client.i -= 5;
+                       }
+                   )
+                )
+               ));
+           
+            eb.register(
+                "pcs.status",
+                h,
+                (new Handlers(
+                    "pcs.status",
+                    new Action<JObject>(
+                        message =>
+                        {
+                    client.i += 5;
+                        }
+                    )
+                )
+            ));
 
-     //close the socket
-     eb.CloseConnection(5);
-     
-     Console.WriteLine("i :"+i);
-    }catch(Exception e){
-         System.Console.WriteLine(e);
-    }
+            Console.WriteLine("i:"+client.i);
+
+            //send a message without a replyhandler
+            eb.send("pcs.status", body_add, "pcs.status", h);
+            //publish
+            JObject body_close =new JObject();
+            body_close.Add("message","close");
+            eb.publish("pcs.status", body_close, h);
+
+            //close the socket
+            eb.CloseConnection(5);
+            Console.WriteLine("i:"+client.i);
+        }
+        catch (Exception e)
+        {
+            System.Console.WriteLine(e);
+        }
 
  }
 }

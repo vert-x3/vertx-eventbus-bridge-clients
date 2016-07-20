@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -9,7 +10,7 @@ using Newtonsoft.Json.Linq;
 namespace io.vertx
 {
     //This is the structure for JSON message
-    public struct JsonMessage{
+     struct JsonMessage{
         String type;
         String address;
         String replyAddress;
@@ -77,8 +78,12 @@ namespace io.vertx
         }
 
         public bool isNull(){
-            if(function==null && address==null) return true;
+            if(this.function==null && this.address==null) return true;
             return false; 
+        }
+        public void setNull(){
+            this.function=null ;
+            this.address=null; 
         }
     }
 
@@ -106,7 +111,8 @@ namespace io.vertx
 #		2) handlers - List<address,Handlers> 
 #		3) state -integer
 #		4) ReplyHandler - <address,function>
-#		
+#		5) ErrorNumber
+#       6) fileLock - object
 #Eventbus state
 #	0 - not connected/failed
 #	1 - connecting
@@ -123,11 +129,15 @@ namespace io.vertx
         Thread t ;
         object Lock=new Object();
         bool clearReplyHandler=false;
+        static int errorNumber=0;
+        static object fileLock=new Object();
+
         //constructor
         public Eventbus(String host="127.0.0.1",int port=7000,int TimeOut=1000){
 
             if(TimeOut<500) this.TimeOut=500;
             else this.TimeOut=TimeOut;
+
             //connect
             try{
                 this.state = 1;
@@ -140,12 +150,13 @@ namespace io.vertx
                 }
             catch (Exception e){
                 this.state=4;
+                PrintError(1,"Could not establish the connection\n"+e);
                 throw new System.Exception("Not connected "+host+" "+port+"\n",e);
             }
         }
 //Connection send and receive--------------------------------------------------------------------
 
-        bool isConnected(){
+        public bool isConnected(){
             if(this.state==2) return true;
             return false;
         }
@@ -153,7 +164,6 @@ namespace io.vertx
         bool sendFrame(JsonMessage jsonMessage){
             try{
                 String message_s=jsonMessage.getMessage();
-                //Console.WriteLine(message_s);
                 UTF8Encoding utf8 =new UTF8Encoding();
                 byte[] l=new byte[4];
                 l=BitConverter.GetBytes((UInt32)message_s.Length);
@@ -166,6 +176,7 @@ namespace io.vertx
                 int bytesSent2 = sock.Send(utf8.GetBytes(message_s));
                 return true;
             }catch(Exception e){
+                PrintError(2,"Can not send the message\n"+e);
                 throw new System.Exception("Can not send the message\n",e);
             }
         }
@@ -194,26 +205,47 @@ namespace io.vertx
                                 //Handlers
                                 lock (Lock)
                                 {
+                                    //handlers 
                                     if(Handlers.ContainsKey(address)==true){
-                                        clearReplyHandler=true;
                                         foreach (Handlers handler in Handlers[address])
                                         {
                                             handler.handle(message);
                                         }
+                                        //reply address
+                                        if(this.replyHandler.isNull()==false){
+                                            if(this.replyHandler.address.Equals(address)==true){
+                                                this.replyHandler.handle(false,message);
+                                                this.replyHandler.setNull();
+                                                clearReplyHandler=true;
+                                            }
+                                        }
             
-                                    }else if(this.replyHandler.isNull()==false){
+                                     }
+                                     //reply handler
+                                     else if(this.replyHandler.isNull()==false){
                                         if(this.replyHandler.address.Equals(address)==true){
                                             this.replyHandler.handle(false,message);
+                                            this.replyHandler.setNull();
                                             clearReplyHandler=true;
                                         }
+                                        else{
+                                            PrintError(3,"No handlers to handle this message\n"+message);
+                                        }
                                     }else{
-                                        Console.WriteLine("No handlers to handle this message");
+                                        PrintError(3,"No handlers to handle this message\n"+message);
                                     }
                                 }
                             }
                             if(message.GetValue("type").ToString()=="err"){
-                                this.replyHandler.handle(true,message);
-                                clearReplyHandler=true;
+                                if(this.replyHandler.isNull()==false){
+                                    this.replyHandler.handle(true,message);
+                                    this.replyHandler.setNull();
+                                    clearReplyHandler=true;
+                                }
+                                else{
+                                    PrintError(3,"No handlers to handle this message\n"+message);
+                                }
+                                
                             }
                     }
                     else{
@@ -222,11 +254,11 @@ namespace io.vertx
                         
                     }
                     else if(sock.Poll(100,SelectMode.SelectError)){
-                        
+                        PrintError(4,"Error at socket polling");
                     }
                 }
                 catch(Exception e){
-                    PrintError(1,e.ToString());
+                    PrintError(5,e.ToString());
                 }
             }
         }
@@ -235,10 +267,14 @@ namespace io.vertx
            if(this.state==1)
             this.sock.Shutdown(SocketShutdown.Both);
            else{
-               Thread.Sleep(timeInterval*1000);
-               this.state=3;
-               this.sock.Shutdown(SocketShutdown.Both);
-               this.state=4;
+               try{
+                    Thread.Sleep(timeInterval*1000);
+                    this.state=3;
+                    this.sock.Shutdown(SocketShutdown.Both);
+                    this.state=4;
+               }catch(Exception e){
+                    PrintError(6,e.ToString());
+               }
            }
        }
 //send, receive, register, unregister ------------------------------------------------------------
@@ -258,6 +294,7 @@ namespace io.vertx
                 if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
                     try{this.sendFrame(message);}
                     catch(Exception e){
+                        PrintError(7,e.ToString());
                         throw new System.Exception("",e);
                     }
                     break;
@@ -282,6 +319,7 @@ namespace io.vertx
                 if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
                     try{this.sendFrame(message);}
                     catch(Exception e){
+                        PrintError(7,e.ToString());
                         throw new System.Exception("",e);
                     }
                     break;
@@ -321,6 +359,7 @@ namespace io.vertx
                 if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
                     try{this.sendFrame(message);}
                     catch(Exception e){
+                        PrintError(8,e.ToString());
                         throw new System.Exception("",e);
                     }
                     break;
@@ -345,6 +384,7 @@ namespace io.vertx
                     if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
                         try{this.sendFrame(message);}
                         catch(Exception e){
+                            PrintError(9,e.ToString());
                             throw new System.Exception("",e);
                         }
                         break;
@@ -377,6 +417,7 @@ namespace io.vertx
                     if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
                         try{this.sendFrame(message);}
                         catch(Exception e){
+                            PrintError(10,e.ToString());
                             throw new System.Exception("",e);
                         }
                         break;
@@ -389,9 +430,32 @@ namespace io.vertx
         }
 //Errors ------------------------------------------------------------------------------------------
 
-        static void PrintError(int code,String error){
-            Console.WriteLine("CODE :"+code);
-            Console.WriteLine(error);
-        }      
+       public static void PrintError(int code,String error){
+            lock(fileLock){
+                errorNumber++;
+                string path="error_log_"+errorNumber+".txt";
+                try{
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+
+                    // Create the file.
+                    using (FileStream fs = File.Create(path))
+                    {
+                        Byte[] info = new UTF8Encoding(true).GetBytes("********** "+DateTime.Now+" **********\n");
+                        fs.Write(info, 0, info.Length);
+                        info = new UTF8Encoding(true).GetBytes("CODE: "+code+"\n");
+                        fs.Write(info, 0, info.Length);
+                        info = new UTF8Encoding(true).GetBytes(error+"\n\n");
+                        fs.Write(info, 0, info.Length);
+                    }
+
+                }catch(Exception e){
+                    Console.WriteLine("Could not write to the log file\n"+e.ToString());
+
+                }
+            }
+        }    
     }
 }

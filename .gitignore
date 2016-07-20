@@ -1,0 +1,7 @@
+#vscode
+.vscode
+
+#dotnet
+bin
+obj
+project.lock.json

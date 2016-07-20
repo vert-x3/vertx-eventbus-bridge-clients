@@ -24,7 +24,7 @@ example:
         {
             public static void Main(string[] args){
              
-             eventbus.Eventbus eb=new eventbus.Eventbus();
+             io.vertx.Eventbus eb=new io.vertx.Eventbus();
             
              Headers h=new Headers();
              h.addHeaders("type","maths");

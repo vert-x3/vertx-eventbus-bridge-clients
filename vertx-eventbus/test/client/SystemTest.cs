@@ -2,13 +2,14 @@ using io.vertx;
 using System;
 using Xunit;
 using Newtonsoft.Json.Linq;
+using System.IO;
 
 public class SystemTest
 {
     public static int i = 0;
 
     [Fact]
-    public void testing()
+    public void test_system_testing()
     {
         try
         {
@@ -93,4 +94,81 @@ public class SystemTest
         }
 
     }
+
+    [Fact]
+    public void test_2_connectionError()
+    {
+        bool errorFound=false;
+        try
+        {
+            io.vertx.Eventbus eb = new io.vertx.Eventbus("127.0.0.1",7001);
+            //close the socket
+            eb.CloseConnection(5);
+        }catch(Exception){
+            errorFound=true;
+        }
+        Assert.Equal(true,errorFound);
+        bool fileFound=false;
+
+            try{
+                string path="error_log_1.txt";
+                if (File.Exists(path))
+                {
+                    fileFound=true;
+                }
+            }catch(Exception e){
+                System.Console.WriteLine(e);
+            }
+            Assert.Equal(true,fileFound);
+    }
+
+    [Fact]
+    public void test_3_noHandlers()
+    {
+        try
+        {
+            io.vertx.Eventbus eb = new io.vertx.Eventbus();
+
+            Headers h = new Headers();
+            h.addHeaders("type", "maths");
+            JObject body_add =new JObject();
+            body_add.Add("message","add");
+
+            //sending with time out = 5 secs
+            eb.send(
+                "pcs.status",//address
+                body_add,//body
+                "pcs.status.c",//reply address-no handlers
+                h, //headers
+                (new ReplyHandlers("pcs.status",//replyhandler address
+                   new Action<bool, JObject>( //replyhandler function
+                       (err, message) =>
+                       {
+                    if (err == false)
+                               SystemTest.i += 5;
+                       }
+                   )
+                )
+               ),
+               5);
+            //close the socket
+            eb.CloseConnection(5);
+            bool fileFound=false;
+
+            try{
+                string path="error_log_2.txt";
+                if (File.Exists(path))
+                {
+                    fileFound=true;
+                }
+            }catch(Exception e){
+                System.Console.WriteLine(e);
+            }
+            Assert.Equal(true,fileFound);
+            Assert.Equal(0, i);
+        }catch(Exception e){
+             System.Console.WriteLine(e);
+        }
+    }
+
 }

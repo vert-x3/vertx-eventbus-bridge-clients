@@ -9,7 +9,7 @@ public class client
      try
         {
             io.vertx.Eventbus eb = new io.vertx.Eventbus();
-
+            
             Console.WriteLine("i:"+client.i);
 
             Headers h = new Headers();
@@ -27,8 +27,9 @@ public class client
                    new Action<bool, JObject>( //replyhandler function
                        (err, message) =>
                        {
-                    if (err == false)
-                               client.i += 5;
+                        if (err == false)
+                            client.i += 5;
+                        Console.WriteLine(message);
                        }
                    )
                 )
@@ -50,8 +51,9 @@ public class client
                    new Action<bool, JObject>( //replyhandler function
                        (err, message) =>
                        {
-                    if (err == false)
-                               client.i -= 5;
+                        if (err == false)
+                            client.i -= 5;
+                        Console.WriteLine(message);
                        }
                    )
                 )
@@ -65,7 +67,8 @@ public class client
                     new Action<JObject>(
                         message =>
                         {
-                    client.i += 5;
+                        client.i += 5;
+                        Console.WriteLine(message);
                         }
                     )
                 )

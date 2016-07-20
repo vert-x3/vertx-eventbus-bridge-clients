@@ -1,4 +1,4 @@
-using eventbus;
+using io.vertx;
 using System;
 using Newtonsoft.Json.Linq;
 
@@ -8,7 +8,7 @@ public class client
     public static void Main(string[] args){
      try
         {
-            eventbus.Eventbus eb = new eventbus.Eventbus();
+            io.vertx.Eventbus eb = new io.vertx.Eventbus();
 
             Console.WriteLine("i:"+client.i);
 

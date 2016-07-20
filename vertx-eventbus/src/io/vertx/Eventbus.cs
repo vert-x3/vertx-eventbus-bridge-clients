@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
-namespace eventbus
+namespace io.vertx
 {
     //This is the structure for JSON message
     public struct JsonMessage{

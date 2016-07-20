@@ -1,4 +1,4 @@
-using eventbus;
+using io.vertx;
 using System;
 using Xunit;
 using Newtonsoft.Json.Linq;
@@ -12,7 +12,7 @@ public class SystemTest
     {
         try
         {
-            eventbus.Eventbus eb = new eventbus.Eventbus();
+            io.vertx.Eventbus eb = new io.vertx.Eventbus();
 
             Headers h = new Headers();
             h.addHeaders("type", "maths");

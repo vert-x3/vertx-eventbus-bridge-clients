@@ -456,25 +456,15 @@ namespace io.vertx
 
        public static void PrintError(int code,String error){
             lock(fileLock){
-                errorNumber++;
-                string path="error_log_"+errorNumber+".txt";
+                var name="error_log_.txt";
                 try{
-                    if (File.Exists(path))
-                    {
-                        File.Delete(path);
-                    }
-
-                    // Create the file.
-                    using (FileStream fs = File.Create(path))
-                    {
-                        Byte[] info = new UTF8Encoding(true).GetBytes("********** "+DateTime.Now+" **********\n");
-                        fs.Write(info, 0, info.Length);
-                        info = new UTF8Encoding(true).GetBytes("CODE: "+code+"\n");
-                        fs.Write(info, 0, info.Length);
-                        info = new UTF8Encoding(true).GetBytes(error+"\n\n");
-                        fs.Write(info, 0, info.Length);
-                    }
-
+                    using (FileStream aFile = new FileStream(name, FileMode.Append, FileAccess.Write))
+                        using (StreamWriter log = new StreamWriter(aFile)) {
+                            log.WriteLine("********** "+DateTime.Now+" **********\n");
+                            log.WriteLine("CODE: "+code+"\n");
+                            log.WriteLine(error+"\n\n");   
+                        }
+        
                 }catch(Exception e){
                     Console.WriteLine("Could not write to the log file\n"+e.ToString());
 

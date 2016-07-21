@@ -112,7 +112,7 @@ public class SystemTest
         bool fileFound=false;
 
             try{
-                string path="error_log_1.txt";
+                string path="error_log_.txt";
                 if (File.Exists(path))
                 {
                     fileFound=true;
@@ -157,7 +157,7 @@ public class SystemTest
             bool fileFound=false;
 
             try{
-                string path="error_log_2.txt";
+                string path="error_log_.txt";
                 if (File.Exists(path))
                 {
                     fileFound=true;

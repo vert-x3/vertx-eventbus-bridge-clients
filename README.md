@@ -28,11 +28,15 @@ example:
             
              Headers h=new Headers();
              h.addHeaders("type","maths");
-
+             
+             //body
+             JObject body=new JObject();
+             body.Add("message","add");
+             
              //sending with time out = 5 secs
              eb.send(
                  "pcs.status",//address
-                 "{\"message\":\"add\"}",//body
+                 body,//body
                  "pcs.status",//reply address
                  h, //headers
                  (new ReplyHandlers("pcs.status",//replyhandler address

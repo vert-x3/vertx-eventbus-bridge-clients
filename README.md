@@ -1,2 +1,2 @@
-# TCP-eventbus-client-C-Plus-Plus
+# TCP-eventbus-client-C
 vertx tcp eventbus client module for C

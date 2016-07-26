@@ -135,8 +135,7 @@ namespace io.vertx
 #		2) handlers - List<address,Handlers> 
 #		3) state -integer
 #		4) ReplyHandler - <address,function>
-#		5) ErrorNumber
-#       6) fileLock - object
+#       5) fileLock - object
 #Eventbus state
 #	0 - not connected/failed
 #	1 - connecting
@@ -153,7 +152,6 @@ namespace io.vertx
         Thread t ;
         object Lock=new Object();
         bool clearReplyHandler=false;
-        static int errorNumber=0;
         static object fileLock=new Object();
 
         //constructor

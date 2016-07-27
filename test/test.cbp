@@ -20,6 +20,7 @@
 					<Add directory="../vertx" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="-lpthread" />
 					<Add library="B:/GSOC/GsocVertx/Cclient/TCP-eventbus-client-C-Plus-Plus/vertx/libvertx.a" />
 					<Add library="lib/ws2_32.lib" />
 				</Linker>

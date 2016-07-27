@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+
 #ifdef _WIN32
 #include <windows.h>
 #include <winsock2.h>
@@ -30,10 +31,11 @@
 // Handlers -------------------------------------------------
 
 //This is the structure for handler
-typedef struct Handler{
+typedef struct Handler_t{
     String address;
     void (*function)(String *);
 } Handler;
+
 
 // Linked list------------------------------------------------
 struct node
@@ -166,6 +168,8 @@ int INIT;
 int STATE =0;
 SOCKET SendingSocket = INVALID_SOCKET;
 int FLAG;
+pthread_t receive_thread;
+pthread_mutex_t STATE_MUTEX = PTHREAD_MUTEX_INITIALIZER;
 
 void setHost(String host){
     HOST=host;
@@ -179,7 +183,7 @@ void setTimeOut(int timeout){
     TIMEOUT=timeout;
 }
 
-void create_socket(){
+void create_eventbus(){
      WSADATA   wsaData;
      SOCKADDR_IN   ServerAddr;
      int  RetCode;
@@ -188,6 +192,9 @@ void create_socket(){
      WSAStartup(MAKEWORD(2,2), &wsaData);
 
      SendingSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+     pthread_mutex_lock(&STATE_MUTEX);
+     STATE = 1; //connecting
+     pthread_mutex_unlock(&STATE_MUTEX);
      if(SendingSocket == INVALID_SOCKET)
      {
           perror("Client: socket() failed! Error code: "+ WSAGetLastError());
@@ -207,46 +214,71 @@ void create_socket(){
           WSACleanup();
           exit(1);
      }
-
+     pthread_mutex_lock(&STATE_MUTEX);
+     STATE = 2; //connected
+     pthread_mutex_unlock(&STATE_MUTEX);
 }
 
-void recieve_frame(){
+void recieve_frame(void * i){
   fd_set active_fd_set, read_fd_set;
   FD_ZERO (&active_fd_set);
   FD_SET (SendingSocket, &active_fd_set);
-    int retVal;
-  //while(1){
-  read_fd_set = active_fd_set;
-
-  if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0){
-      perror ("select");
-      exit (EXIT_FAILURE);
+  int retVal;
+  const String type_="type",address_="address",type_message_="message",type_err_="err";
+  while(1){
+      if(STATE==2){
+          read_fd_set = active_fd_set;
+          if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0){
+              perror ("select");
+              exit (EXIT_FAILURE);
+          }
+            if (FD_ISSET (SendingSocket, &read_fd_set)){
+                //lock
+                char length_buffer[4];
+                retVal = recv(SendingSocket, length_buffer, 4, 0);
+                if ( retVal > 0 ){
+                    unsigned int num=0,num1=0,num2=0,num3=0;
+                    num=(length_buffer[3]);
+                    num1=(length_buffer[2]);
+                    num2=(length_buffer[1]);
+                    num3=(length_buffer[0]);
+                    num=num | (num1<<8);
+                    num=num | (num2<<16);
+                    num=num | (num3<<24);
+                    char message_buffer[num];
+                    //get message
+                    retVal = recv(SendingSocket, message_buffer, (num), 0);
+                    if ( retVal > 0 ){
+                        String type,address;
+                        //type
+                        type=json_object_get_string(json_object(json_parse_string(message_buffer)),type_);
+                        //message
+                        if(strcmp(type,type_message_)==0){
+                            //address
+                            address=json_object_get_string(json_object(json_parse_string(message_buffer)),address_);
+                            String message=json_serialize_to_string_pretty(json_parse_string(message_buffer));
+                            handle(address,&message);
+                            free(message);
+                        }
+                        //error
+                        else if(strcmp(type,type_err_)==0){
+                            String message=json_serialize_to_string_pretty(json_parse_string(message_buffer));
+                            perror(strcat( "Error occurred ",message));
+                            free(message);
+                        }
+                        free(type);free(address);
+                    }
+                }
+            }
+      }else{
+            return;
+      }
   }
-
-    printf("%d\n",FD_SETSIZE);
-
-    if (FD_ISSET (SendingSocket, &read_fd_set)){
-        //lock
-        char length_buffer[4];
-        retVal = recv(SendingSocket, length_buffer, 4, 0);
-        if ( retVal > 0 ){
-            printf("Bytes received: %s\n", length_buffer);
-        }
-        int num=0;
-        length_buffer[3] = (num>>24) & 0xFF;
-        length_buffer[2] = (num>>16) & 0xFF;
-        length_buffer[1] = (num>>8) & 0xFF;
-        length_buffer[0] = num & 0xFF;
-        printf("Bytes received: %d\n",num);
-        //char message[(int)length_buffer];
-        //lock
-    }
-  //}
 }
 
 void send_frame(String * message){
     //length
-    byte buffer[4];
+    char buffer[4];
     int length=(int)strlen(*message);
     buffer[0] = length >> 24;
     buffer[1] = length >> 16;
@@ -257,15 +289,41 @@ void send_frame(String * message){
         printf("send failed with error: %d\n", WSAGetLastError());
         closesocket(SendingSocket);
         WSACleanup();
-    }else printf("length %s %d\n",buffer,length);
+    }//else printf("length %s %d\n",buffer,length);
     //message
     INIT = send( SendingSocket, *message, (int)strlen(*message), 0 );
     if (INIT == SOCKET_ERROR) {
         printf("send failed with error: %d\n", WSAGetLastError());
         closesocket(SendingSocket);
         WSACleanup();
-    }else printf("message %s\n",*message);
+    }//else printf("message %s\n",*message);
 }
+
+void start_eventbus(){
+    int i;
+    if(pthread_create(&receive_thread, NULL, recieve_frame,&i)) {
+        fprintf(stderr, "Error creating thread\n");
+        return;
+    }
+}
+//close socket
+void close_eventbus(){
+    if(STATE==1 ){
+        closesocket(SendingSocket);
+    }else{
+        STATE=3; //closing socket
+        while(pthread_cancel(receive_thread)!=0){
+            Sleep(10);
+        }
+        if(closesocket(SendingSocket)!=0){
+            perror("Error occurred at closing socket");
+        }
+        STATE=4; //closed
+    }
+}
+
+
+// send publish register unregister-------------------------------------------------------------
 
 void eventbus_send(String address,String replyAddress,String Headers,String Body){
     JsonMessage js;
@@ -280,8 +338,6 @@ void eventbus_send(String address,String replyAddress,String Headers,String Body
     js.headers=headers;
     String message=NULL;
     getMessage(js,&message);
-
-    printf("%s\n",message);
     send_frame(&message);
     free(message);
 }
@@ -298,13 +354,14 @@ void eventbus_publish(String address,String Headers,String Body){
     js.headers=headers;
     String message=NULL;
     getMessage(js,&message);
-
-    printf("%s\n",message);
     send_frame(&message);
     free(message);
 }
 
-void eventbus_register(String address,String Headers,String Body,Handler handler){
+void eventbus_register(String address,String Headers,String Body,void (*func)(String *)){
+    Handler handler;
+    handler.address=address;
+    handler.function=func;
 
     if(find(address)==false){
         JsonMessage js;
@@ -318,8 +375,6 @@ void eventbus_register(String address,String Headers,String Body,Handler handler
         js.headers=headers;
         String message=NULL;
         getMessage(js,&message);
-
-        printf("%s\n",message);
         send_frame(&message);
         free(message);
     }
@@ -341,8 +396,6 @@ void eventbus_unregister(String address,String Headers,String Body){
         js.headers=headers;
         String message=NULL;
         getMessage(js,&message);
-
-        printf("%s\n",message);
         send_frame(&message);
         free(message);
     }
@@ -352,27 +405,19 @@ void eventbus_unregister(String address,String Headers,String Body){
 
 //test-------------------------------------------------------------------
 void test(void (*func)(String *)){
-    Handler h;
-    h.address="pcs.status";
-    String s="pcs.status";
-    h.function=func;
-    //handle(h,&s);
 
-    Handler h2;
-    h2.address="pcs.status1";
-    h2.function=func;
-
-    create_socket();
-    eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"send ok\"}");
-    recieve_frame();
+    /*create_eventbus();
+    start_eventbus();
+    printf("1");
+    eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"send1 ok\"}");
+    eventbus_send("pcs.status.c","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"send2 ok\"}");
     eventbus_publish("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}");
     eventbus_register("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}",h);
-    eventbus_register("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}",h2);
-
+    eventbus_register("pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}",h2);
     printList();
-    handle("pcs.status",&s);
-    eventbus_unregister("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}");
+    eventbus_unregister("pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}");
     printList();
+    close_eventbus(4000);*/
 }
 
 

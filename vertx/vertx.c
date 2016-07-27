@@ -11,7 +11,7 @@
 #include <pthread.h>
 
 
-#ifdef _WIN32
+/*#ifdef _WIN32
 #include <windows.h>
 #include <winsock2.h>
 #endif // _WIN32
@@ -25,7 +25,8 @@
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
-#endif //windows
+#endif //windows*/
+
 #define DEFAULT_BUFLEN 4
 
 // Handlers -------------------------------------------------
@@ -402,23 +403,6 @@ void eventbus_unregister(String address,String Headers,String Body){
     delete_node(&address);
 }
 
-
-//test-------------------------------------------------------------------
-void test(void (*func)(String *)){
-
-    /*create_eventbus();
-    start_eventbus();
-    printf("1");
-    eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"send1 ok\"}");
-    eventbus_send("pcs.status.c","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"send2 ok\"}");
-    eventbus_publish("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}");
-    eventbus_register("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}",h);
-    eventbus_register("pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}",h2);
-    printList();
-    eventbus_unregister("pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}");
-    printList();
-    close_eventbus(4000);*/
-}
 
 
 

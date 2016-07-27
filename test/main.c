@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "vertx/vertx.h"
 
-void test(void (*func)(String *));
+//void test(void (*func)(String *));
 
 void function(String *msg);
 int main(){
@@ -18,8 +18,8 @@ int main(){
     printList();
     eventbus_unregister("pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"publish ok\"}");
     printList();
-    Sleep(10);
-    close_eventbus(4000);
+    Sleep(1000);
+    close_eventbus();
     return 0;
 }
 

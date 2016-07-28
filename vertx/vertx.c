@@ -10,23 +10,6 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-
-/*#ifdef _WIN32
-#include <windows.h>
-#include <winsock2.h>
-#endif // _WIN32
-
-#ifdef linux
-#include <pthread.h>
-#include <sys/socket.h>
-#endif // linux
-
-#ifndef linux
-#pragma comment (lib, "Ws2_32.lib")
-#pragma comment (lib, "Mswsock.lib")
-#pragma comment (lib, "AdvApi32.lib")
-#endif //windows*/
-
 #define DEFAULT_BUFLEN 4
 
 // Handlers -------------------------------------------------
@@ -38,7 +21,7 @@ typedef struct Handler_t{
 } Handler;
 
 
-// Linked list------------------------------------------------
+// Linked list-----------------------------------------------------
 struct node
 {
    Handler data;
@@ -126,7 +109,7 @@ typedef struct JsonMessage{
     JSON_Value *body;
 } JsonMessage;
 
-//get message
+//get message - string
 void getMessage(JsonMessage jsonMessage,String* message){
     *message=NULL;
     //init
@@ -143,19 +126,19 @@ void getMessage(JsonMessage jsonMessage,String* message){
     json_value_free(root_value);
 }
 
-/*Eventbus constructor
+/*Event bus constructor
 #	input parameters
 #		1) host	- String
 #		2) port	- integer(>2^10-1)
 #		3) TimeOut - int- receive TimeOut
 #	inside parameters
 #		1) socket
-#		2) handlers - List<address,Handlers>
+#		2) handlers - Linked List
 #		3) state -integer
-#		4) ReplyHandler - <address,function>
-#		5) ErrorNumber
-#       6) fileLock - object
-#Eventbus state
+#       4) INIT,FLAG
+#		5) STATE_MUTEX
+#       6) receive_thread
+#Event bus state
 #	0 - not connected/failed
 #	1 - connecting
 #	2 - connected /open
@@ -185,12 +168,14 @@ void setTimeOut(int timeout){
 }
 
 void create_eventbus(){
-     WSADATA   wsaData;
-     SOCKADDR_IN   ServerAddr;
+#ifdef _WIN32
+    SOCKADDR_IN   ServerAddr;
+#endif // _WIN32
+#ifdef __unix__
+    struct sockaddr_in  ServerAddr;
+#endif // linux
      int  RetCode;
-
-     // Initialize Winsock version 2.2
-     WSAStartup(MAKEWORD(2,2), &wsaData);
+     osi_socket_startup;
 
      SendingSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
      pthread_mutex_lock(&STATE_MUTEX);
@@ -198,21 +183,26 @@ void create_eventbus(){
      pthread_mutex_unlock(&STATE_MUTEX);
      if(SendingSocket == INVALID_SOCKET)
      {
-          perror("Client: socket() failed! Error code: "+ WSAGetLastError());
-          WSACleanup();
+          perror("Client: socket() failed\n");
           exit(1);
      }
      setsockopt(SendingSocket,SO_RCVTIMEO, 1000,  (char*)&FLAG, sizeof(int));
      ServerAddr.sin_family = AF_INET;
      ServerAddr.sin_port = htons(PORT);
      ServerAddr.sin_addr.s_addr = inet_addr(HOST);
+
+#ifdef _WIN32
      RetCode = connect(SendingSocket, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
+#endif // _WIN32
+#ifdef __unix__
+     RetCode = connect(SendingSocket, &ServerAddr, sizeof(ServerAddr);
+#endif // linux
+
 
      if(RetCode != 0)
      {
-          perror("Client: connect() failed! Error code: "+WSAGetLastError());
-          closesocket(SendingSocket);
-          WSACleanup();
+          perror("Client: connect() failed\n");
+          osi_socket_close(SendingSocket);
           exit(1);
      }
      pthread_mutex_lock(&STATE_MUTEX);
@@ -227,7 +217,10 @@ void recieve_frame(void * i){
   int retVal;
   const String type_="type",address_="address",type_message_="message",type_err_="err";
   while(1){
+
+      pthread_mutex_lock(&STATE_MUTEX);
       if(STATE==2){
+      pthread_mutex_unlock(&STATE_MUTEX);
           read_fd_set = active_fd_set;
           if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0){
               perror ("select");
@@ -236,7 +229,7 @@ void recieve_frame(void * i){
             if (FD_ISSET (SendingSocket, &read_fd_set)){
                 //lock
                 char length_buffer[4];
-                retVal = recv(SendingSocket, length_buffer, 4, 0);
+                retVal = osi_socket_read(SendingSocket, length_buffer, 4);
                 if ( retVal > 0 ){
                     unsigned int num=0,num1=0,num2=0,num3=0;
                     num=(length_buffer[3]);
@@ -248,7 +241,7 @@ void recieve_frame(void * i){
                     num=num | (num3<<24);
                     char message_buffer[num];
                     //get message
-                    retVal = recv(SendingSocket, message_buffer, (num), 0);
+                    retVal = osi_socket_read(SendingSocket, message_buffer, (num));
                     if ( retVal > 0 ){
                         String type,address;
                         //type
@@ -267,11 +260,13 @@ void recieve_frame(void * i){
                             perror(strcat( "Error occurred ",message));
                             free(message);
                         }
-                        free(type);free(address);
+                        free(type);
+                        free(address);
                     }
                 }
             }
       }else{
+            pthread_mutex_unlock(&STATE_MUTEX);
             return;
       }
   }
@@ -285,22 +280,16 @@ void send_frame(String * message){
     buffer[1] = length >> 16;
     buffer[2] = length >> 8;
     buffer[3] = length;
-    INIT = send( SendingSocket, buffer, 4, 0 );
-    if (INIT == SOCKET_ERROR) {
-        printf("send failed with error: %d\n", WSAGetLastError());
-        closesocket(SendingSocket);
-        WSACleanup();
-    }//else printf("length %s %d\n",buffer,length);
-    //message
-    INIT = send( SendingSocket, *message, (int)strlen(*message), 0 );
-    if (INIT == SOCKET_ERROR) {
-        printf("send failed with error: %d\n", WSAGetLastError());
-        closesocket(SendingSocket);
-        WSACleanup();
-    }//else printf("message %s\n",*message);
+    INIT = osi_socket_write( SendingSocket, buffer, 4);
+    INIT = osi_socket_write( SendingSocket, *message, (int)strlen(*message));
+     printf("----------------message %s------------------------\n",*message);
 }
 
 void start_eventbus(){
+    if(STATE!=2){
+        perror("socket not connected\n");
+        return;
+    }
     int i;
     if(pthread_create(&receive_thread, NULL, recieve_frame,&i)) {
         fprintf(stderr, "Error creating thread\n");
@@ -310,13 +299,15 @@ void start_eventbus(){
 //close socket
 void close_eventbus(){
     if(STATE==1 ){
-        closesocket(SendingSocket);
+        osi_socket_close(SendingSocket);
     }else{
+        pthread_mutex_lock(&STATE_MUTEX);
         STATE=3; //closing socket
+        pthread_mutex_unlock(&STATE_MUTEX);
         while(pthread_cancel(receive_thread)!=0){
             Sleep(10);
         }
-        if(closesocket(SendingSocket)!=0){
+        if(osi_socket_close(SendingSocket)!=0){
             perror("Error occurred at closing socket");
         }
         STATE=4; //closed

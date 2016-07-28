@@ -14,5 +14,5 @@ void eventbus_send(String address,String replyAddress,String Headers,String Body
 void eventbus_publish(String address,String Headers,String Body);
 void eventbus_register(String address,String Headers,String Body,void (*func)(String *));
 void eventbus_unregister(String address,String Headers,String Body);
-void test(void (*func)(String *));
+
 #endif

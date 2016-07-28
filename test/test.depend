@@ -15,7 +15,7 @@
 
 1469646112 b:\gsoc\gsocvertx\cclient\tcp-eventbus-client-c-plus-plus\vertx\vertx.h
 
-1469719926 source:b:\gsoc\gsocvertx\cclient\tcp-eventbus-client-c-plus-plus\vertx\vertx.c
+1469722638 source:b:\gsoc\gsocvertx\cclient\tcp-eventbus-client-c-plus-plus\vertx\vertx.c
 	<stdio.h>
 	<string.h>
 	"parson.h"
@@ -27,7 +27,7 @@
 	<stdbool.h>
 	<pthread.h>
 
-1469719483 source:b:\gsoc\gsocvertx\cclient\tcp-eventbus-client-c-plus-plus\test\main.c
+1469723477 source:b:\gsoc\gsocvertx\cclient\tcp-eventbus-client-c-plus-plus\test\main.c
 	<stdio.h>
 	<stdlib.h>
 	"vertx/vertx.h"
@@ -41,10 +41,11 @@
 	<stdio.h>
 	"osi_socket.h"
 
-1469452125 b:\gsoc\gsocvertx\cclient\tcp-eventbus-client-c-plus-plus\vertx\osi_socket.h
+1469722360 b:\gsoc\gsocvertx\cclient\tcp-eventbus-client-c-plus-plus\vertx\osi_socket.h
 	<errno.h>
 	<conio.h>
 	<stdio.h>
+	<windows.h>
 	<winsock2.h>
 	<sys/select.h>
 	<sys/socket.h>
@@ -52,6 +53,7 @@
 	<netinet/in.h>
 	<netinet/tcp.h>
 	<netdb.h>
+	<unistd.h>
 
 1469208721 b:\gsoc\gsocvertx\cclient\tcp-eventbus-client-c-plus-plus\test\vertx\parson.h
 	<stddef.h>

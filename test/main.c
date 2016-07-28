@@ -3,7 +3,6 @@
 #include "vertx/vertx.h"
 #include "vertx/parson.h"
 
-
 void function(String *msg);
 int i=0;
 
@@ -21,7 +20,13 @@ int main(){
     //send
     eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     eventbus_send("pcs.status","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
+
+    #ifdef _WIN32
     Sleep(1000);
+    #endif // _WIN32
+    #ifdef __unix__
+    sleep(1);
+    #endif // linux
     if(i==2){
         printf("TEST -1- Passed\n");
     }else{
@@ -31,12 +36,15 @@ int main(){
     printf("TEST - 2\n");
     //unregister
     eventbus_unregister("pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"register ok\"}");
-     Sleep(1000);
     eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
-    //send
     eventbus_send("pcs.status","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
+    #ifdef _WIN32
     Sleep(1000);
-    if(i==4){
+    #endif // _WIN32
+    #ifdef __unix__
+    sleep(1);
+    #endif // linux
+    if(i==3){
         printf("TEST -2- Passed\n");
     }else{
         printf("TEST -2- Failed\n");

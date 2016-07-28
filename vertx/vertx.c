@@ -195,7 +195,7 @@ void create_eventbus(){
      RetCode = connect(SendingSocket, (SOCKADDR *) &ServerAddr, sizeof(ServerAddr));
 #endif // _WIN32
 #ifdef __unix__
-     RetCode = connect(SendingSocket, &ServerAddr, sizeof(ServerAddr);
+     RetCode = connect(SendingSocket, &ServerAddr, sizeof(ServerAddr));
 #endif // linux
 
 
@@ -282,7 +282,7 @@ void send_frame(String * message){
     buffer[3] = length;
     INIT = osi_socket_write( SendingSocket, buffer, 4);
     INIT = osi_socket_write( SendingSocket, *message, (int)strlen(*message));
-     printf("----------------message %s------------------------\n",*message);
+    // printf("\n----------------message %s------------------------\n\n",*message);
 }
 
 void start_eventbus(){
@@ -305,7 +305,7 @@ void close_eventbus(){
         STATE=3; //closing socket
         pthread_mutex_unlock(&STATE_MUTEX);
         while(pthread_cancel(receive_thread)!=0){
-            Sleep(10);
+            sleep(10);
         }
         if(osi_socket_close(SendingSocket)!=0){
             perror("Error occurred at closing socket");

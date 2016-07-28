@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include "osi_socket.h"
 
-#if defined(__MINGW32__) && !defined(__CYGWIN__)
+#if defined _WIN32
 void osi_perror(const char *s)
 {
 	unsigned int winerr;
 
 	winerr = WSAGetLastError();
-	
+
 	switch(winerr)
 	{
     case WSAEINTR: printf("%s: Interrupted system call\n", s); return;

@@ -2,11 +2,12 @@
 #define __OS_INDEPENDENT_SOCKETS_WIN32_COMPAT
 #include <errno.h>
 
-#if defined(__MINGW32__) && !defined(__CYGWIN__)
+#if defined _WIN32
 #include <conio.h>
 #include <stdio.h>
-
+#include <windows.h>
 #include <winsock2.h>
+#define sleep(x) Sleep(1000 * x)
 
 /* This is a broken replacement since I am ignoring the 3rd argument */
 #define setenv(a,b,c) SetEnvironmentVariable(a,b)
@@ -27,6 +28,7 @@ void osi_perror(const char *s);
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
+# include <unistd.h>
 
 #define osi_socket_startup
 

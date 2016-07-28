@@ -1,9 +1,9 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "lib/parson.h"
+#include "parson.h"
 #include "vertx.h"
-#include "lib/osi_socket.h"
+#include "osi_socket.h"
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>

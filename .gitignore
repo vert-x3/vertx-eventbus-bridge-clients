@@ -6,6 +6,8 @@
 *.depend
 *.cbp
 *.layout
+.vscode
+.exe
 
 # Precompiled Headers
 *.gch

@@ -1,14 +1,14 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "lib\parson.h"
-#include "include\vertx.h"
-#include "lib\osi_socket.h"
+#include "parson.h"
+#include "vertx.h"
+#include "osi_socket.h"
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdbool.h>
-
+ 
 #define DEFAULT_BUFLEN 4
 
 // Handlers -------------------------------------------------
@@ -227,7 +227,7 @@ void create_eventbus(){
      WaitForSingleObject(STATE_MUTEX, INFINITE);
 	 #endif
 	 #ifdef __unix__
-     WaitForSingleObject(STATE_MUTEX, INFINITE);
+     pthread_mutex_lock(&STATE_MUTEX);
 	 #endif 
      STATE = 2; //connected
 	 #ifdef _WIN32
@@ -326,7 +326,7 @@ void send_frame(String * message){
     INIT = osi_socket_write( SendingSocket, buffer, 4);
     INIT = osi_socket_write( SendingSocket, *message, (int)strlen(*message));
     // printf("\n----------------message %s------------------------\n\n",*message);
-}
+} 
 
 void start_eventbus(){
     if(STATE!=2){
@@ -335,7 +335,7 @@ void start_eventbus(){
     }
     
 	#ifdef __unix__
-    if(pthread_create(&receive_thread, NULL, recieve_frame,&i)) {
+    if(pthread_create(&receive_thread, NULL, recieve_frame,NULL)) {
         fprintf(stderr, "Error creating thread\n");
         return;
     }
@@ -377,7 +377,9 @@ void close_eventbus(){
         }
         STATE=4; //closed	
     }
+	#ifdef _WIN32
 	CloseHandle(STATE_MUTEX);
+	#endif
 }
 
 

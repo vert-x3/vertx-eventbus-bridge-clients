@@ -4,14 +4,14 @@ CFLAGS = -w -g
 
 INCLUDES = -I./include \
 
-LFLAGS = -L./lib \
+LFLAGS = -L./lib 
 
 #this is for windows. Comment this if you are using Unix/Linux
-LIBS = -lws2_32 --enable-stdcall-fixup
+#LIBS = -lws2_32 --enable-stdcall-fixup
 #this is for Unix/Linux. Comment this if you are using Windows
-#LIBS = -lpthread --enable-stdcall-fixup
+LIBS = -lpthread 
 
-SRCS = vertx.c lib/parson.c test/test.c lib/osi_socket.c 
+SRCS =  lib/parson.c  lib/osi_socket.c vertx.c test/test.c
 
 OBJS = $(SRCS:.c=.o)
 
@@ -22,7 +22,7 @@ MAIN = test
 all:    $(MAIN)
 
 $(MAIN): $(OBJS) 
-		$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
+		$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) $(LFLAGS) $(LIBS)
 
 .c.o:
 		$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@

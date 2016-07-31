@@ -33,8 +33,8 @@ int main(){
     start_eventbus();
 
     //register
-    eventbus_register("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"register ok\"}",function);
-    eventbus_register("pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"register ok\"}",function);
+    eventbus_register("pcs.status",function);
+    eventbus_register("pcs.status.c",function);
     //send
     eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     eventbus_send("pcs.status","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
@@ -47,9 +47,9 @@ int main(){
     #endif // linux
 
     //unregister
-    eventbus_unregister("pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"register ok\"}");
+    eventbus_unregister("pcs.status.c");
     //send
-    eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
+    eventbus_publish("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     eventbus_send("pcs.status","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     
     #ifdef _WIN32

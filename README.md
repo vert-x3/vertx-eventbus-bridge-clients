@@ -49,7 +49,7 @@ int main(){
     //unregister
     eventbus_unregister("pcs.status.c");
     //send
-    eventbus_publish("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
+    eventbus_publish("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     eventbus_send("pcs.status","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     
     #ifdef _WIN32

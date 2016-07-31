@@ -1,14 +1,13 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "parson.h"
-#include "vertx.h"
-#include "osi_socket.h"
+#include "lib\parson.h"
+#include "include\vertx.h"
+#include "lib\osi_socket.h"
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <pthread.h>
 
 #define DEFAULT_BUFLEN 4
 
@@ -18,13 +17,13 @@
 typedef struct Handler_t{
     String address;
     void (*function)(String *);
-} Handler;
+} handler_t;
 
 
 // Linked list-----------------------------------------------------
 struct node
 {
-   Handler data;
+   handler_t data;
    int key;
    struct node *next;
 };
@@ -67,7 +66,7 @@ void printList(){
 }
 
 //insert link at the first location
-void insertFirst(int key, Handler handler){
+void insertFirst(int key, handler_t handler){
    struct node *link = (struct node*) malloc(sizeof(struct node));
    link->key = key;
    link->data = handler;
@@ -100,17 +99,17 @@ struct node* delete_node(String * address){
 
 // Json Message-----------------------------------------------
 
-//This is the structure for JsonMessage
-typedef struct JsonMessage{
+//This is the structure for jsonMessage_t
+typedef struct jsonMessage_t{
     String type;
     String address;
     JSON_Value *headers;
     String replyAddress;
     JSON_Value *body;
-} JsonMessage;
+} jsonMessage_t;
 
 //get message - string
-void getMessage(JsonMessage jsonMessage,String* message){
+void getMessage(jsonMessage_t jsonMessage,String* message){
     *message=NULL;
     //init
     JSON_Value *root_value = json_value_init_object();
@@ -138,6 +137,7 @@ void getMessage(JsonMessage jsonMessage,String* message){
 #       4) INIT,FLAG
 #		5) STATE_MUTEX
 #       6) receive_thread
+#		7) OS - 1=windows 0=unix
 #Event bus state
 #	0 - not connected/failed
 #	1 - connecting
@@ -152,8 +152,14 @@ int INIT;
 int STATE =0;
 SOCKET SendingSocket = INVALID_SOCKET;
 int FLAG;
-pthread_t receive_thread;
-pthread_mutex_t STATE_MUTEX = PTHREAD_MUTEX_INITIALIZER;
+
+#ifdef _WIN32
+	HANDLE receive_thread;
+#endif // _WIN32
+#ifdef __unix__
+    pthread_t receive_thread;
+	pthread_mutex_t STATE_MUTEX = PTHREAD_MUTEX_INITIALIZER; 
+#endif // linux
 
 void setHost(String host){
     HOST=host;
@@ -178,9 +184,21 @@ void create_eventbus(){
      osi_socket_startup;
 
      SendingSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	 
+	 #ifdef _WIN32
+     WaitForSingleObject(STATE_MUTEX, INFINITE);
+	 #endif
+	 #ifdef __unix__
      pthread_mutex_lock(&STATE_MUTEX);
+	 #endif 
      STATE = 1; //connecting
+     #ifdef _WIN32
+     ReleaseMutex(STATE_MUTEX);
+	 #endif
+	 #ifdef __unix__
      pthread_mutex_unlock(&STATE_MUTEX);
+	 #endif
+	 
      if(SendingSocket == INVALID_SOCKET)
      {
           perror("Client: socket() failed\n");
@@ -205,9 +223,19 @@ void create_eventbus(){
           osi_socket_close(SendingSocket);
           exit(1);
      }
-     pthread_mutex_lock(&STATE_MUTEX);
+     #ifdef _WIN32
+     WaitForSingleObject(STATE_MUTEX, INFINITE);
+	 #endif
+	 #ifdef __unix__
+     WaitForSingleObject(STATE_MUTEX, INFINITE);
+	 #endif 
      STATE = 2; //connected
+	 #ifdef _WIN32
+     ReleaseMutex(STATE_MUTEX);
+	 #endif
+	 #ifdef __unix__
      pthread_mutex_unlock(&STATE_MUTEX);
+	 #endif
 }
 
 void recieve_frame(void * i){
@@ -217,15 +245,25 @@ void recieve_frame(void * i){
   int retVal;
   const String type_="type",address_="address",type_message_="message",type_err_="err";
   while(1){
-
-      pthread_mutex_lock(&STATE_MUTEX);
+     #ifdef _WIN32
+     WaitForSingleObject(STATE_MUTEX, INFINITE);
+	 #endif
+	 #ifdef __unix__
+     pthread_mutex_lock(&STATE_MUTEX);
+	 #endif
       if(STATE==2){
-      pthread_mutex_unlock(&STATE_MUTEX);
+		 #ifdef _WIN32
+		 ReleaseMutex(STATE_MUTEX);
+		 #endif
+		 #ifdef __unix__
+		 pthread_mutex_unlock(&STATE_MUTEX);
+		 #endif
           read_fd_set = active_fd_set;
           if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0){
               perror ("select");
               exit (EXIT_FAILURE);
           }
+		  
             if (FD_ISSET (SendingSocket, &read_fd_set)){
                 //lock
                 char length_buffer[4];
@@ -266,7 +304,12 @@ void recieve_frame(void * i){
                 }
             }
       }else{
-            pthread_mutex_unlock(&STATE_MUTEX);
+             #ifdef _WIN32
+			 ReleaseMutex(STATE_MUTEX);
+			 #endif
+			 #ifdef __unix__
+			 pthread_mutex_unlock(&STATE_MUTEX);
+			 #endif
             return;
       }
   }
@@ -290,35 +333,59 @@ void start_eventbus(){
         perror("socket not connected\n");
         return;
     }
-    int i;
+    
+	#ifdef __unix__
     if(pthread_create(&receive_thread, NULL, recieve_frame,&i)) {
         fprintf(stderr, "Error creating thread\n");
         return;
     }
+	#endif
+	#ifdef _WIN32
+	receive_thread = CreateThread(NULL, 0, recieve_frame, NULL, 0, NULL);
+	#endif
 }
 //close socket
 void close_eventbus(){
     if(STATE==1 ){
         osi_socket_close(SendingSocket);
     }else{
-        pthread_mutex_lock(&STATE_MUTEX);
+     #ifdef _WIN32
+     WaitForSingleObject(STATE_MUTEX, INFINITE);
+	 #endif
+	 #ifdef __unix__
+     pthread_mutex_lock(&STATE_MUTEX);
+	 #endif
         STATE=3; //closing socket
-        pthread_mutex_unlock(&STATE_MUTEX);
+     #ifdef _WIN32
+     ReleaseMutex(STATE_MUTEX);
+	 #endif
+	 #ifdef __unix__
+     pthread_mutex_unlock(&STATE_MUTEX);
+	 #endif
+	 
+		#ifdef _WIN32
+		CloseHandle(receive_thread);
+		#endif
+		#ifdef __unix__
         while(pthread_cancel(receive_thread)!=0){
-            sleep(10);
+			sleep(1);
         }
+		#endif
+		
         if(osi_socket_close(SendingSocket)!=0){
             perror("Error occurred at closing socket");
         }
-        STATE=4; //closed
+        STATE=4; //closed	
     }
+	CloseHandle(STATE_MUTEX);
 }
 
 
 // send publish register unregister-------------------------------------------------------------
 
 void eventbus_send(String address,String replyAddress,String Headers,String Body){
-    JsonMessage js;
+	
+    jsonMessage_t js;
     js.address=address;
     js.replyAddress=replyAddress;
     js.type="send";
@@ -335,10 +402,10 @@ void eventbus_send(String address,String replyAddress,String Headers,String Body
 }
 
 void eventbus_publish(String address,String Headers,String Body){
-    JsonMessage js;
+    jsonMessage_t js;
     js.address=address;
     js.type="publish";
-
+	js.replyAddress=NULL;
     JSON_Value *body = json_parse_string(Body);
     JSON_Value *headers = json_parse_string(Headers);
 
@@ -350,39 +417,41 @@ void eventbus_publish(String address,String Headers,String Body){
     free(message);
 }
 
-void eventbus_register(String address,String Headers,String Body,void (*func)(String *)){
-    Handler handler;
+void eventbus_register(String address,void (*func)(String *)){
+    handler_t handler;
     handler.address=address;
     handler.function=func;
-
+	
     if(find(address)==false){
-        JsonMessage js;
+        jsonMessage_t js;
         js.address=address;
         js.type="register";
-
-        JSON_Value *body = json_parse_string(Body);
-        JSON_Value *headers = json_parse_string(Headers);
+		js.replyAddress=NULL;
+        JSON_Value *body = json_parse_string(NULL);
+        JSON_Value *headers = json_parse_string(NULL);
 
         js.body=body;
         js.headers=headers;
         String message=NULL;
         getMessage(js,&message);
+		
         send_frame(&message);
+	
         free(message);
     }
     insertFirst(node_index,handler);
     node_index++;
 }
 
-void eventbus_unregister(String address,String Headers,String Body){
+void eventbus_unregister(String address){
 
     if(find(address)==false){
-        JsonMessage js;
+        jsonMessage_t js;
         js.address=address;
         js.type="register";
-
-        JSON_Value *body = json_parse_string(Body);
-        JSON_Value *headers = json_parse_string(Headers);
+		js.replyAddress=NULL;
+        JSON_Value *body = json_parse_string(NULL);
+        JSON_Value *headers = json_parse_string(NULL);
 
         js.body=body;
         js.headers=headers;

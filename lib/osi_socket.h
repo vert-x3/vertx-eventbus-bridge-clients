@@ -6,9 +6,9 @@
 #include <conio.h>
 #include <stdio.h>
 #include <windows.h>
+#include <process.h>
+#define STATE_MUTEX CreateMutex( NULL, FALSE, NULL)
 #include <winsock2.h>
-#define sleep(x) Sleep(1000 * x)
-
 /* This is a broken replacement since I am ignoring the 3rd argument */
 #define setenv(a,b,c) SetEnvironmentVariable(a,b)
 #define unsetenv(a) SetEnvironmentVariable(a,NULL)
@@ -28,8 +28,8 @@ void osi_perror(const char *s);
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
-# include <unistd.h>
-
+#include <unistd.h>
+#include <pthread.h>
 #define osi_socket_startup
 
 #define osi_perror(a) perror(a)

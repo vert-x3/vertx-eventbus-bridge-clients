@@ -2,14 +2,14 @@
 CC = gcc
 CFLAGS = -w -g
 
-INCLUDES = -I./include \
+INCLUDES = -I./include 
 
 LFLAGS = -L./lib 
 
 #this is for windows. Comment this if you are using Unix/Linux
-#LIBS = -lws2_32 --enable-stdcall-fixup
+LIBS = -lws2_32 --enable-stdcall-fixup
 #this is for Unix/Linux. Comment this if you are using Windows
-LIBS = -lpthread 
+#LIBS = -lpthread 
 
 SRCS =  lib/parson.c  lib/osi_socket.c vertx.c test/test.c
 

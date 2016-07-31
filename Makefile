@@ -1,5 +1,6 @@
 
 CC = gcc
+MAKELIB = ar rcs
 CFLAGS = -w -g
 
 INCLUDES = -I./include \
@@ -12,8 +13,12 @@ LIBS = -lws2_32 --enable-stdcall-fixup
 #LIBS = -lpthread --enable-stdcall-fixup
 
 SRCS = vertx.c lib/parson.c test/test.c lib/osi_socket.c 
+LIBSRCS = vertx.c lib/parson.c lib/osi_socket.c 
 
 OBJS = $(SRCS:.c=.o)
+LIBOBJS = $(LIBSRCS:.c=.o)
+
+TARGET = libvertx.a
 
 MAIN = test
 
@@ -26,6 +31,7 @@ $(MAIN): $(OBJS)
 
 .c.o:
 		$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+		$(MAKELIB) $(TARGET) -o $(LIBOBJS)
 
 clean:
 		$(RM) *.o *~ $(MAIN)

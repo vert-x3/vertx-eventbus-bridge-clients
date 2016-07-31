@@ -88,23 +88,26 @@ class Eventbus:
 			message=json.loads(json_message)
 			#check
 			#print(message)
-			if message['type']== 'message':	
-					
-				try:
-					#handlers		
-					if self.Handlers[message['address']] != None:
-						for handler in self.Handlers[message['address']]:
-							handler(self.this,message)
-						self.ReplyHandler=None
-					
-				except KeyError:	
-					#replyHandler
+			if message['type']== 'message':
+				# failure message
+				if 'address' not in message.keys():
+					self.printErr('message failure', 'SEVERE', message)
+				else:	
 					try:
-						if self.ReplyHandler['address']== message['address']:
-							self.ReplyHandler['replyHandler'](self.this,None,message)
+						#handlers		
+						if self.Handlers[message['address']] != None:
+							for handler in self.Handlers[message['address']]:
+								handler(self.this,message)
 							self.ReplyHandler=None
-					except KeyError:
-						print('no handlers for '+message['address'])
+						
+					except KeyError:	
+						#replyHandler
+						try:
+							if self.ReplyHandler['address']== message['address']:
+								self.ReplyHandler['replyHandler'](self.this,None,message)
+								self.ReplyHandler=None
+						except KeyError:
+							print('no handlers for '+message['address'])
 					
 			elif message['type']=='err':
 				try:

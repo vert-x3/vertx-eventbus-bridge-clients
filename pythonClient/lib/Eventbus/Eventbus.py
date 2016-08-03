@@ -46,6 +46,8 @@ class Eventbus:
 			self.TimeOut = 0.01
 		else:
 			self.TimeOut = TimeOut
+			
+		self.TimeInterval=TimeInterval
 		
 		#connect
 		try:

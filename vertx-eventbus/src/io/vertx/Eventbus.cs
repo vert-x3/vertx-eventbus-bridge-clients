@@ -224,37 +224,42 @@ namespace io.vertx
                             JObject message=JObject.Parse(message_string);
                             if(message.GetValue("type").ToString()=="message"){
                                 string address=message.GetValue("address").ToString();
-                                //Handlers
-                                lock (Lock)
-                                {
-                                    //handlers 
-                                    if(Handlers.ContainsKey(address)==true){
-                                        foreach (Handlers handler in Handlers[address])
-                                        {
-                                            handler.handle(message);
+
+                                if(address== null){
+                                    PrintError(3,"Failed Message\n"+message);
+                                }else{
+                                    //Handlers
+                                    lock (Lock)
+                                    {
+                                        //handlers 
+                                        if(Handlers.ContainsKey(address)==true){
+                                            foreach (Handlers handler in Handlers[address])
+                                            {
+                                                handler.handle(message);
+                                            }
+                                            //reply address
+                                            if(this.replyHandler.isNull()==false){
+                                                if(this.replyHandler.address.Equals(address)==true){
+                                                    this.replyHandler.handle(false,message);
+                                                    this.replyHandler.setNull();
+                                                    clearReplyHandler=true;
+                                                }
+                                            }
+                
                                         }
-                                        //reply address
-                                        if(this.replyHandler.isNull()==false){
+                                        //reply handler
+                                        else if(this.replyHandler.isNull()==false){
                                             if(this.replyHandler.address.Equals(address)==true){
                                                 this.replyHandler.handle(false,message);
                                                 this.replyHandler.setNull();
                                                 clearReplyHandler=true;
                                             }
-                                        }
-            
-                                     }
-                                     //reply handler
-                                     else if(this.replyHandler.isNull()==false){
-                                        if(this.replyHandler.address.Equals(address)==true){
-                                            this.replyHandler.handle(false,message);
-                                            this.replyHandler.setNull();
-                                            clearReplyHandler=true;
-                                        }
-                                        else{
+                                            else{
+                                                PrintError(3,"No handlers to handle this message\n"+message);
+                                            }
+                                        }else{
                                             PrintError(3,"No handlers to handle this message\n"+message);
                                         }
-                                    }else{
-                                        PrintError(3,"No handlers to handle this message\n"+message);
                                     }
                                 }
                             }
@@ -395,12 +400,11 @@ namespace io.vertx
         #headers
         #handler -Handlers
         */
-        public void register(string address,Headers headers,Handlers handler){
+        public void register(string address,Handlers handler){
 
             if(Handlers.ContainsKey(address)==false){
                 JsonMessage message=new JsonMessage();
                 message.create("register",address,null,null);
-                message.setHeaders(headers);
 
                 while(true){
                     if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){
@@ -429,11 +433,10 @@ namespace io.vertx
         #address-string
         #headers - Headers
         */
-        public void unregister(string address,Headers headers){
+        public void unregister(string address){
             if(Handlers.ContainsKey(address)==false){
                 JsonMessage message=new JsonMessage();
                 message.create("unregister",address,null,null);
-                message.setHeaders(headers);
 
                 while(true){
                     if(this.sock.Poll(this.TimeOut,SelectMode.SelectWrite)){

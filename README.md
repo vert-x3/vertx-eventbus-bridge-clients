@@ -43,7 +43,7 @@ example:
 		do.setTimeInterval(5) 
 
 		#register handler
-		eb.registerHandler('add',do,Client.Handler);
+		eb.registerHandler('add',Client.Handler);
 
 		#send 
 		eb.send('add',body,do)

@@ -17,7 +17,7 @@ import io.vertx.core.eventbus.EventBus;
  *
  * @author Jayamine Alupotha
  */
-public class TCPBridgeExamples extends AbstractVerticle{
+public class Server extends AbstractVerticle{
 
   public void start(Future<Void> fut){
 
@@ -25,10 +25,9 @@ public class TCPBridgeExamples extends AbstractVerticle{
     vertx,
     new BridgeOptions()
         .addInboundPermitted(new PermittedOptions().setAddress("pcs.status"))
-        .addOutboundPermitted(new PermittedOptions().setAddress("pcs.status"))
+        .addOutboundPermitted(new PermittedOptions().setAddress("pcs.status")));
 		
 	bridge.listen(7000, res -> {
-		System.out.println("Started");
 		if (res.succeeded()) {
 		System.out.println("request success");
 		} else {

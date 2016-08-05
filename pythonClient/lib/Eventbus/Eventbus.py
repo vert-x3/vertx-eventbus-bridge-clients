@@ -11,17 +11,16 @@ import threading
 #Eventbus constructor
 #	input parameters
 #		1) instance 
-#		2) host	- String
-#		3) port	- integer(>2^10-1)
-#		4) TimeOut - float- receive TimeOut
-#		5) TimeInterval -float -sleep time
+#		1) host	- String
+#		2) port	- integer(>2^10-1)
+#		3) TimeOut - float- receive TimeOut
+#		4) TimeInterval -float -sleep time
 #	inside parameters
 #		1) socket
 #		2) handlers - List<String address,array<functions/handler>> 
 #		3) state -integer
 #		4) ReplyHandler - <address,function>
-#		5) writable - boolean {1: sendFrame, 0: receiving
-#		
+#		5) writable - boolean {1: sendFrame, 0: receiving		
 #Eventbus state
 #	0 - not connected/failed
 #	1 - connecting
@@ -46,7 +45,8 @@ class Eventbus:
 			self.TimeOut = 0.01
 		else:
 			self.TimeOut = TimeOut
-		
+			
+		self.TimeInterval=TimeInterval
 		#connect
 		try:
 			self.state = 1
@@ -230,39 +230,27 @@ class Eventbus:
 	#address-string
 	#deliveryOption -object
 	#replyHandler -function
-	def registerHandler(self,address,deliveryOption=None,handler=None):
+	def registerHandler(self,address,handler):
 		
 		if self.isConnected() is True:
 			message=None
-			
-			if callable(deliveryOption)== True:
-				replyHandler=deliveryOption
-				deliveryOption=None
-			
-			if deliveryOption!= None:
-				headers=deliveryOption.headers
-				replyAddress=deliveryOption.replyAddress
-				timeInterval=deliveryOption.timeInterval
-			else :
-				headers=None
-				replyAddress=None
-				timeInterval=self.TimeInterval
-			
-			try:
-				if self.Handlers[address] == None:
+			if callable(handler)== True:
+				try:
+					if (address not in self.Handlers.keys()) or (self.Handlers[address] == None):
+						self.Handlers[address]=[]
+						message=json.dumps({'type':'register','address':address,})
+						self.writable=True
+						self.sendFrame(message)
+						self.writable=False
+				except KeyError:
 					self.Handlers[address]=[]
-					message=json.dumps({'type':'register','address':address,'headers':headers,})
-					self.writable=True
-					self.sendFrame(message)
-					self.writable=False
-			except KeyError:
-				self.Handlers[address]=[]
-				
-			#time.sleep(timeInterval)	
-			try:
-				self.Handlers[address].append(handler)
-			except Exception as e:
-				self.printErr(4,'SEVERE','Registration failed\n'+str(e))
+			
+				try:
+					self.Handlers[address].append(handler)
+				except Exception as e:
+					self.printErr(4,'SEVERE','Registration failed\n'+str(e))
+			else:
+				self.printErr(4,'SEVERE','Registration failed. Function is not callable\n')
 		else:
 			self.printErr(3,'SEVERE','INVALID_STATE_ERR')
 		
@@ -270,23 +258,16 @@ class Eventbus:
 	#address-string
 	#deliveryOption -object
 	#replyHandler -function
-	def unregisterHandler(self,address,deliveryOption=None):
+	def unregisterHandler(self,address):
 		if self.isConnected() is True:
 			message=None
-			
-			if deliveryOption!= None:
-				headers=deliveryOption.headers
-				replyAddress=deliveryOption.replyAddress
-			else :
-				headers=None
-				replyAddress=None
-			
-			if self.Handlers[address]!= None:
-				if len(self.Handlers) == 1:
-					message=json.dumps({'type':'unregister','address':address,'headers':headers,})
-					self.sendFrame(message)
-				del self.Handlers[address]
-			else:
+			try:
+				if self.Handlers[address]!= None:
+					if len(self.Handlers) == 1:
+						message=json.dumps({'type':'unregister','address':address,})
+						self.sendFrame(message)
+					del self.Handlers[address]
+			except:
 				self.printErr(5,'SEVERE','Unknown address:'+address)
 				
 		else:

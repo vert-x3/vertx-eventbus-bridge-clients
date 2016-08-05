@@ -33,7 +33,7 @@ do.addReplyAddress('welcome')
 do.setTimeInterval(1) 
 
 #register handler
-eb.registerHandler('welcome',do,Client.Handler);
+eb.registerHandler('welcome',Client.Handler);
 
 #send 
 eb.send('welcome',body,do)

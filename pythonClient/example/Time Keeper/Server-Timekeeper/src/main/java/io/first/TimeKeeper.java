@@ -12,6 +12,7 @@ import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.eventbus.bridge.tcp.TcpEventBusBridge;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.DeliveryOptions;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -42,18 +43,21 @@ public class TimeKeeper extends AbstractVerticle{
 	});
 	EventBus eb = vertx.eventBus();
 	
+	DeliveryOptions options = new DeliveryOptions();
+	options.addHeader("type", "text");
+	
 	eb.consumer("Time", message -> {
-		System.out.println("Get time\n: " + message.body());
+		System.out.println("Get time\n: " + message.body()+ " headers"+ message.headers());
 		Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
         System.out.println( sdf.format(cal.getTime()) );
 		String jsonString = "{\"Time\":\""+sdf.format(cal.getTime())+"\"}";
 		JsonObject object = new JsonObject(jsonString);
-		message.reply(object);
+		message.reply(object,options);
 	});
 	
 	eb.consumer("Date", message -> {
-		System.out.println("Get date\n: " + message.body());
+		System.out.println("Get date\n: " + message.body()+ " headers"+ message.headers());
 		Date date=new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd");
         System.out.println( sdf.format(date) );
@@ -63,7 +67,7 @@ public class TimeKeeper extends AbstractVerticle{
 	});
 	
 	eb.consumer("Get", message -> {
-		System.out.println("Get\n: " + message.body());
+		System.out.println("Get\n: " + message.body()+ " headers"+ message.headers());
 		//send date
 		String str=message.body().toString();
 		if(str.indexOf("send date") != -1){

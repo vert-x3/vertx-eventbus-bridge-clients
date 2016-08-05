@@ -1,6 +1,7 @@
-import eventbus.Eventbus as Eventbus
-import eventbus.DeliveryOption as DeliveryOption
+import Eventbus.Eventbus as Eventbus
+import Eventbus.DeliveryOption as DeliveryOption
 import json
+import time
 
 #replyHanlder (self,error,message)
 #handlers (self,message)
@@ -25,10 +26,10 @@ class TimeClient:
 	def Handler(self,message):
 		if message != None:
 			print('Update:')
-			print(message['body'])
+			print(message)
 			
 	
-eb=Eventbus.Eventbus('localhost', 7000)	
+eb=Eventbus.Eventbus(TimeClient(),'localhost', 7000)	
 
 #jsonObject -body
 body_date={'message':'send date',}
@@ -38,7 +39,7 @@ do=DeliveryOption.DeliveryOption();
 do.addHeader('type','text')
 do.addHeader('size','small')
 do.addReplyAddress('Date')
-do.setTimeInterval(1) 
+do.setTimeInterval(10) 
 
 #send - get data
 eb.send('Date',body_date,do,TimeClient.printDate)
@@ -56,18 +57,22 @@ eb.send('Time',body_time,do,TimeClient.printTime)
 do.addReplyAddress('Get')
 
 #register handler
-eb.registerHandler('Get',do,TimeClient.Handler);
+eb.registerHandler('Get',TimeClient.Handler);
 
 #jsonObject -body
 body_get={'message':'Thanks time keeper',}
-
-#publish- get 
-eb.publish('Get',body_get,do)
 
 #send- get time
 eb.send('Time',body_time,do,TimeClient.printTime)
 #send - get data
 eb.send('Date',body_date,do,TimeClient.printDate)
 
+#unregister handler
+eb.unregisterHandler('Get');
+
+#publish- get 
+eb.publish('Get',body_get,do)
+
 #close after 5 seconds
 eb.closeConnection(5)
+

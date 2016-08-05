@@ -14,7 +14,7 @@ public class SystemTest
     {
         try
         {
-            io.vertx.Eventbus eb = new io.vertx.Eventbus();
+            Eventbus eb = new Eventbus("127.0.0.1",7000);
 
             Headers h = new Headers();
             h.addHeaders("type", "maths");
@@ -61,12 +61,7 @@ public class SystemTest
                ));
             Assert.Equal(0, i);
 
-
-
-            eb.register(
-                "pcs.status",
-                h,
-                (new Handlers(
+            Handlers hand=new Handlers(
                     "pcs.status",
                     new Action<JObject>(
                         message =>
@@ -74,20 +69,27 @@ public class SystemTest
                     SystemTest.i += 5;
                         }
                     )
-                )
-            ));
+                );
+
+            eb.register("pcs.status",hand);
 
             //send a message without a replyhandler
             eb.send("pcs.status", body_add, "pcs.status", h);
 
-            //publish
+            //waiting for the message
+            System.Threading.Thread.Sleep(1000);
+
+            //unregister
+            eb.unregister("pcs.status");
+
+             //publish
             JObject body_close =new JObject();
             body_close.Add("message","close");
             eb.publish("pcs.status", body_close, h);
 
             //close the socket
             eb.CloseConnection(5);
-            Assert.Equal(10, i);
+            Assert.Equal(5, i);
         }
         catch (Exception e)
         {

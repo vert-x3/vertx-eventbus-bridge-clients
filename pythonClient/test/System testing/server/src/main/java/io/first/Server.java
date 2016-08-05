@@ -23,23 +23,20 @@ public class Server extends AbstractVerticle{
 	TcpEventBusBridge bridge = TcpEventBusBridge.create(
     vertx,
     new BridgeOptions()
-        .addInboundPermitted(new PermittedOptions().setAddress("add"))
-        .addOutboundPermitted(new PermittedOptions().setAddress("add")));
+        .addInboundPermitted(new PermittedOptions().setAddress("echo"))
+        .addOutboundPermitted(new PermittedOptions().setAddress("echo")));
 
-	bridge.listen(7000, res -> {
+	bridge.listen(7001, res -> {
 		if (res.succeeded()) {
-		System.out.println("Started");
+		
 		} else {
-		System.out.println("failed");
+			System.exit(0);
 		}
 	});
 	EventBus eb = vertx.eventBus();
 	
-	MessageConsumer< JsonObject > consumer=eb.consumer("add", message -> {
-		System.out.println("Message body: " + message.body());
-		String jsonString = "{\"result\":\"4\"}";
-		JsonObject object = new JsonObject(jsonString);
-		message.reply(object);
+	MessageConsumer< JsonObject > consumer=eb.consumer("echo", message -> {
+		message.reply(message.body());
 	});
 	
 	

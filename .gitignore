@@ -6,6 +6,7 @@
 .settings
 .yardoc
 .yardopts
+__pycache__
 build
 target
 out

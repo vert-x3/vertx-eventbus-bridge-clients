@@ -1,4 +1,4 @@
-##TCP-eventbus-client-Python
+# TCP-eventbus-client-Python
 
 This is a TCP eventbus implementation for python clients. The protocol is quite simple:
 

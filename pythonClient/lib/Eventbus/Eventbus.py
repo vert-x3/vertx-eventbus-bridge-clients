@@ -20,7 +20,8 @@ import threading
 #		2) handlers - List<String address,array<functions/handler>> 
 #		3) state -integer
 #		4) ReplyHandler - <address,function>
-#		5) writable - boolean {1: sendFrame, 0: receiving		
+#		5) writable - boolean {1: sendFrame, 0: receiving
+#		
 #Eventbus state
 #	0 - not connected/failed
 #	1 - connecting
@@ -218,7 +219,7 @@ class Eventbus:
 			if replyAddress == None:
 				message=json.dumps({'type':'send','address':address,'headers':headers,'body':body,})
 			else:
-				message=json.dumps({'type':'send','address':address,'replyAddress':address,'headers':headers,'body':body,})
+				message=json.dumps({'type':'send','address':address,'headers':headers,'body':body,})
 			
 			self.writable=True
 			self.sendFrame(message)
@@ -242,6 +243,7 @@ class Eventbus:
 						self.writable=True
 						self.sendFrame(message)
 						self.writable=False
+						time.sleep(self.TimeOut)
 				except KeyError:
 					self.Handlers[address]=[]
 			

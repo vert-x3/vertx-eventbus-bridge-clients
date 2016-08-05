@@ -61,7 +61,6 @@ public class client
            
             eb.register(
                 "pcs.status",
-                h,
                 (new Handlers(
                     "pcs.status",
                     new Action<JObject>(

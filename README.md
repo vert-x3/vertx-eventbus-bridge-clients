@@ -2,6 +2,9 @@
 
 This is a TCP eventbus implementation for C# clients. The protocol is quite simple:
 
+Get from Nuget at https://www.nuget.org/packages/VertxEventbus/1.2.0-beta
+                  https://www.nuget.org/packages/vertx-eventbus/2.2.0-pre
+
 * 4bytes int32 message length (big endian encoding)
 * json string
 * built-in keys
@@ -52,4 +55,3 @@ example:
         }
 ```
 
-Get from Nuget at https://www.nuget.org/packages/VertxEventbus/1.0.0/

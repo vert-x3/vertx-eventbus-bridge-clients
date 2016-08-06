@@ -22,11 +22,12 @@ int main(){
     eventbus_send("pcs.status","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
 
     #ifdef _WIN32
-    Sleep(1000); 
+	Sleep(20); Sleep(20); 
     #endif // _WIN32
     #ifdef __unix__
     sleep(1);
     #endif // linux
+	printf("%d\n",i);
     if(i==2){
         printf("TEST -1- Passed\n");
     }else{
@@ -40,11 +41,12 @@ int main(){
     eventbus_publish("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     #ifdef _WIN32
-    Sleep(1000);
+	Sleep(20); Sleep(20); 
     #endif // _WIN32
     #ifdef __unix__
     sleep(1);
     #endif // linux
+	printf("%d\n",i);
     if(i==2){
         printf("TEST -2- Passed\n");
     }else{

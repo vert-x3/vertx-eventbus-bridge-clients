@@ -280,6 +280,7 @@ void recieve_frame(void * i){
                     char message_buffer[num];
                     //get message
                     retVal = osi_socket_read(SendingSocket, message_buffer, (num));
+					//printf("%s\n",message_buffer);
                     if ( retVal > 0 ){
                         String type,address;
                         //type

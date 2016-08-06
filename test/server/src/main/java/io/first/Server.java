@@ -17,15 +17,17 @@ import io.vertx.core.eventbus.EventBus;
  *
  * @author Jayamine Alupotha
  */
-public class TCPBridgeExamples extends AbstractVerticle{
+public class Server extends AbstractVerticle{
 
   public void start(Future<Void> fut){
 
 	TcpEventBusBridge bridge = TcpEventBusBridge.create(
     vertx,
     new BridgeOptions()
+		.addInboundPermitted(new PermittedOptions().setAddress("pcs.status.c"))
+        .addOutboundPermitted(new PermittedOptions().setAddress("pcs.status.c"))
         .addInboundPermitted(new PermittedOptions().setAddress("pcs.status"))
-        .addOutboundPermitted(new PermittedOptions().setAddress("pcs.status"))
+        .addOutboundPermitted(new PermittedOptions().setAddress("pcs.status")));
 		
 	bridge.listen(7000, res -> {
 		System.out.println("Started");

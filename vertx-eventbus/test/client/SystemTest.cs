@@ -168,7 +168,7 @@ public class SystemTest
                 System.Console.WriteLine(e);
             }
             Assert.Equal(true,fileFound);
-            Assert.Equal(0, i);
+            Assert.Equal(5, i);
         }catch(Exception e){
              System.Console.WriteLine(e);
         }

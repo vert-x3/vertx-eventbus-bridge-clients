@@ -15,7 +15,7 @@ This is a TCP eventbus implementation for C clients. The protocol is quite simpl
         
         5) replyAddress: (String, optional) Address for replying to.
         
-
+- NOTE : Please edit Makefile according to your OS.
 example:
 
 ```c

@@ -212,15 +212,33 @@ namespace io.vertx
                         //check state
                     if(this.state==2){  
                             UTF8Encoding utf8 =new UTF8Encoding();
-                            byte[] length=new byte[4];
-                            int Length = sock.Receive(length);
-                            if (BitConverter.IsLittleEndian){
-                                Array.Reverse(length);
+                            byte[] lengthBuffer = new byte[4];
+                            
+                            int receivedBytesLengthBuffer = 0;
+                            // If the message is large, it might be sent in several chunks.
+                            // We have to collect all the chunks, otherwise we get an incomplete message.
+                            // Normally packages are bigger than 4 bytes, so this is just to be sure. 
+                            while(receivedBytesLengthBuffer < 4){
+                                receivedBytesLengthBuffer += sock.Receive(lengthBuffer, receivedBytesLengthBuffer, 4 - receivedBytesLengthBuffer, SocketFlags.None);
                             }
-                            int i = BitConverter.ToInt32(length, 0);
-                            byte[] json=new byte[i];
-                            int Json = sock.Receive(json);
-                            String message_string=utf8.GetString(json,0,Json);
+
+                            if (BitConverter.IsLittleEndian){
+                                Array.Reverse(lengthBuffer);
+                            }
+                            
+                            int messageSize = BitConverter.ToInt32(lengthBuffer, 0);
+                            
+                            byte[] receiveBuffer = new byte[messageSize];
+
+                            int receivedBytesRecvBuff = 0;
+                            // If the message is large, it might be sent in several chunks.
+                            // We have to collect all the chunks, otherwise we get an incomplete message which results in a JSON parsing exception.
+                            // This is NOT so uncommon, if the serialized JSON-Objects are large.
+                            while(receivedBytesRecvBuff < messageSize) {
+                                receivedBytesRecvBuff += sock.Receive(receiveBuffer, receivedBytesRecvBuff, messageSize - receivedBytesRecvBuff, SocketFlags.None);
+                            }
+
+                            String message_string = utf8.GetString(receiveBuffer, 0, receivedBytesRecvBuff);
                             JObject message=JObject.Parse(message_string);
                             if(message.GetValue("type").ToString()=="message"){
                                 string address=message.GetValue("address").ToString();

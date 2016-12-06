@@ -187,15 +187,30 @@ namespace io.vertx
             try{
                 String message_s=jsonMessage.getMessage();
                 UTF8Encoding utf8 =new UTF8Encoding();
-                byte[] l=new byte[4];
-                l=BitConverter.GetBytes((UInt32)message_s.Length);
-                byte[] m=utf8.GetBytes(message_s);
+                byte[] headerBuffer = new byte[4];
+                byte[] bodyBuffer = utf8.GetBytes(message_s);
+                var bodyLength = bodyBuffer.Length;
+                headerBuffer = BitConverter.GetBytes((UInt32) bodyLength);
                 if (BitConverter.IsLittleEndian){
-                    Array.Reverse(l);
-                    Array.Reverse(m);
+                    Array.Reverse(headerBuffer);
                 }
-                int bytesSent1 = sock.Send(l);
-                int bytesSent2 = sock.Send(utf8.GetBytes(message_s));
+
+                // The message might not be sent all at once, but get split up into chunks.
+                // If we don't want to sent an incomplete message, we have to loop over the send requests. 
+                int bytesSentHeader = 0;
+                while(bytesSentHeader < 4)
+                {
+                    bytesSentHeader += sock.Send(headerBuffer, bytesSentHeader, 4 - bytesSentHeader, SocketFlags.None);
+                }
+                
+                // The message might not be sent all at once, but get split up into chunks.
+                // This happens often if the message is large.
+                // If we don't want to sent an incomplete message, we have to loop over the send requests. 
+                int bytesSentBody = 0;
+                while(bytesSentBody < bodyLength)
+                {
+                    bytesSentBody += sock.Send(bodyBuffer, bytesSentBody, bodyLength - bytesSentBody, SocketFlags.None);
+                }
                 return true;
             }catch(Exception e){
                 PrintError(2,"Can not send the message\n"+e);

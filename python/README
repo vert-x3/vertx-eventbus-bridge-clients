@@ -33,13 +33,3 @@ eb.send('add',body,do)
 #close after 5 seconds
 eb.closeConnection(5)
 ```
-
-## Install locally
-
-```
-# build the package
-python setup.py sdist
-
-# With the tar file you can install it anywhere
-pip install --user path_to_tarfile.tar.gz
-```

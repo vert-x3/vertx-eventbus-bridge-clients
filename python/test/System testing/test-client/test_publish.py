@@ -1,38 +1,39 @@
-import Eventbus.Eventbus as Eventbus
-import Eventbus.DeliveryOption as DeliveryOption
+import Vertx.Eventbus as Eventbus
+import Vertx.DeliveryOption as DeliveryOption
 import json
 import unittest
 import time
 
 #handlers (self,message)
 
+
 class Client(unittest.TestCase):
-	('System Testing')
-	result={'msg':'test',}
-			
-	def test_publish(self):
-		c=Client()
-		eb=Eventbus.Eventbus(self,'localhost', 7001)	
+    ('System Testing')
+    result = {'msg': 'test', }
 
-		#jsonObject -body
-		body={'msg':'test1',}
+    def test_publish(self):
+        c = Client()
+        eb = Eventbus.Eventbus(self, 'localhost', 7001)
 
-		#DeliveryOption
-		do=DeliveryOption.DeliveryOption();
-		do.addHeader('type','text')
-		do.addHeader('size','small')
-		do.addReplyAddress('echo')
-		do.setTimeInterval(5) 
+        #jsonObject -body
+        body = {'msg': 'test1', }
 
-		#publish
-		eb.publish('echo',body,do)
-		
-		#publish without do
-		eb.publish('echo',body)
+        # DeliveryOption
+        do = DeliveryOption.DeliveryOption()
+        do.addHeader('type', 'text')
+        do.addHeader('size', 'small')
+        do.addReplyAddress('echo')
+        do.setTimeInterval(5)
 
-		#close after 2 seconds
-		eb.closeConnection(2)
-			
+        # publish
+        eb.publish('echo', body, do)
+
+        # publish without do
+        eb.publish('echo', body)
+
+        # close after 2 seconds
+        eb.closeConnection(2)
+
 
 if __name__ == '__main__':
-		unittest.main()
+    unittest.main()

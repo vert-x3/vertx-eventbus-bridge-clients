@@ -64,7 +64,7 @@ namespace io.vertx
             jsonMessage.Add("headers",headers);
             return jsonMessage.ToString();
         }
-        
+
         public void setHeaders(Headers h){
             headers=h.getHeaders();
         }
@@ -103,11 +103,11 @@ namespace io.vertx
 
         public bool isNull(){
             if(this.function==null && this.address==null) return true;
-            return false; 
+            return false;
         }
         public void setNull(){
             this.function=null ;
-            this.address=null; 
+            this.address=null;
         }
     }
 
@@ -132,7 +132,7 @@ namespace io.vertx
 #		3) TimeOut - int- receive TimeOut
 #	inside parameters
 #		1) socket
-#		2) handlers - List<address,Handlers> 
+#		2) handlers - List<address,Handlers>
 #		3) state -integer
 #		4) ReplyHandler - <address,function>
 #       5) fileLock - object
@@ -196,16 +196,16 @@ namespace io.vertx
                 }
 
                 // The message might not be sent all at once, but get split up into chunks.
-                // If we don't want to sent an incomplete message, we have to loop over the send requests. 
+                // If we don't want to sent an incomplete message, we have to loop over the send requests.
                 int bytesSentHeader = 0;
                 while(bytesSentHeader < 4)
                 {
                     bytesSentHeader += sock.Send(headerBuffer, bytesSentHeader, 4 - bytesSentHeader, SocketFlags.None);
                 }
-                
+
                 // The message might not be sent all at once, but get split up into chunks.
                 // This happens often if the message is large.
-                // If we don't want to sent an incomplete message, we have to loop over the send requests. 
+                // If we don't want to sent an incomplete message, we have to loop over the send requests.
                 int bytesSentBody = 0;
                 while(bytesSentBody < bodyLength)
                 {
@@ -219,20 +219,20 @@ namespace io.vertx
         }
 
         void receive(){
-            
+
             while (true)
             {
                 try{
                     if(this.sock.Poll(this.TimeOut,SelectMode.SelectRead)){
                         //check state
-                    if(this.state==2){  
+                    if(this.state==2){
                             UTF8Encoding utf8 =new UTF8Encoding();
                             byte[] lengthBuffer = new byte[4];
-                            
+
                             int receivedBytesLengthBuffer = 0;
                             // If the message is large, it might be sent in several chunks.
                             // We have to collect all the chunks, otherwise we get an incomplete message.
-                            // Normally packages are bigger than 4 bytes, so this is just to be sure. 
+                            // Normally packages are bigger than 4 bytes, so this is just to be sure.
                             while(receivedBytesLengthBuffer < 4){
                                 receivedBytesLengthBuffer += sock.Receive(lengthBuffer, receivedBytesLengthBuffer, 4 - receivedBytesLengthBuffer, SocketFlags.None);
                             }
@@ -240,9 +240,9 @@ namespace io.vertx
                             if (BitConverter.IsLittleEndian){
                                 Array.Reverse(lengthBuffer);
                             }
-                            
+
                             int messageSize = BitConverter.ToInt32(lengthBuffer, 0);
-                            
+
                             byte[] receiveBuffer = new byte[messageSize];
 
                             int receivedBytesRecvBuff = 0;
@@ -264,7 +264,7 @@ namespace io.vertx
                                     //Handlers
                                     lock (Lock)
                                     {
-                                        //handlers 
+                                        //handlers
                                         if(Handlers.ContainsKey(address)==true){
                                             foreach (Handlers handler in Handlers[address])
                                             {
@@ -278,7 +278,7 @@ namespace io.vertx
                                                     clearReplyHandler=true;
                                                 }
                                             }
-                
+
                                         }
                                         //reply handler
                                         else if(this.replyHandler.isNull()==false){
@@ -305,13 +305,13 @@ namespace io.vertx
                                 else{
                                     PrintError(3,"No handlers to handle this message\n"+message);
                                 }
-                                
+
                             }
                     }
                     else{
                         return;
                     }
-                        
+
                     }
                     else if(sock.Poll(100,SelectMode.SelectError)){
                         PrintError(4,"Error at socket polling");
@@ -359,8 +359,8 @@ namespace io.vertx
                     }
                     break;
                 }
-            }   
-            
+            }
+
         }
         /*
         #address-string
@@ -392,7 +392,7 @@ namespace io.vertx
                     if(clearReplyHandler==true){
                     break;
                     }
-                    timeInterval--;      
+                    timeInterval--;
                 }
             }
             if(timeInterval==0){
@@ -402,7 +402,7 @@ namespace io.vertx
 
             }
 
-            
+
         }
 
         /*
@@ -424,8 +424,8 @@ namespace io.vertx
                     }
                     break;
                 }
-            } 
-        } 
+            }
+        }
 
 
         /*
@@ -458,7 +458,7 @@ namespace io.vertx
                 handlers.Add(handler);
                 Handlers.Add(address,handlers);
             }
-            
+
 
         }
 
@@ -496,14 +496,14 @@ namespace io.vertx
                         using (StreamWriter log = new StreamWriter(aFile)) {
                             log.WriteLine("********** "+DateTime.Now+" **********\n");
                             log.WriteLine("CODE: "+code+"\n");
-                            log.WriteLine(error+"\n\n");   
+                            log.WriteLine(error+"\n\n");
                         }
-        
+
                 }catch(Exception e){
                     Console.WriteLine("Could not write to the log file\n"+e.ToString());
 
                 }
             }
-        }    
+        }
     }
 }

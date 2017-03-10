@@ -1,0 +1,10 @@
+#vscode
+.vscode
+target
+*.bat
+
+#dotnet
+bin
+obj
+project.lock.json
+error_log_*

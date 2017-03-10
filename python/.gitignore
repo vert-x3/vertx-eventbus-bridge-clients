@@ -27,3 +27,5 @@ src/main/generated
 *.swp
 cscope.*
 node_modules
+dist
+./MANIFEST

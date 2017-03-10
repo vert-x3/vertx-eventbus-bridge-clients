@@ -27,5 +27,7 @@ script:
 - docker run --rm -v $(pwd)/python:/workdir:Z -it python:alpine
   /workdir/build.sh
 # Go
+- docker run --rm -v $(pwd)/Go:/workdir:Z -it golang:latest
+  /workdir/build.sh
 
 after_install:

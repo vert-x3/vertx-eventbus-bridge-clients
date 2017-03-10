@@ -11,7 +11,7 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-tcp-eventbus-bridge</artifactId>
-      <version>3.3.0</version>
+      <version>3.4.0</version>
     </dependency>
   </dependencies>
 

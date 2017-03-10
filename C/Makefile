@@ -1,36 +1,82 @@
+OBJS = target/$(CROSS_TRIPLE)/parson.o target/$(CROSS_TRIPLE)/osi_socket.o target/$(CROSS_TRIPLE)/vertx.o
 
-CC = gcc
-CFLAGS = -w -g
+LDFLAGS := -static-libgcc -Wl,-Bstatic
+LDEXTRA := -Wl,-Bdynamic -lpthread -s
 
-INCLUDES = -I./include 
+ifeq ($(CROSS_TRIPLE), x86_64-w64-mingw32)
+	LDFLAGS := -Wl,--enable-stdcall-fixup
+	LDEXTRA := -lws2_32 -s
+endif
+ifeq ($(CROSS_TRIPLE), i686-w64-mingw32)
+	LDFLAGS := -Wl,--enable-stdcall-fixup
+	LDEXTRA := -lws2_32 -s
+endif
 
-LFLAGS = -L./lib 
+ifeq ($(CROSS_TRIPLE), x86_64-apple-darwin14)
+    PATH := /usr/x86_64-apple-darwin14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/osxcross/bin
+    CC := o64-clang
+    LDFLAGS :=
+    LDEXTRA := -lpthread
+endif
 
-#this is for windows. Comment this if you are using Unix/Linux
-LIBS = -lws2_32 --enable-stdcall-fixup
-#this is for Unix/Linux. Comment this if you are using Windows
-#LIBS = -lpthread 
+target/$(CROSS_TRIPLE)/example.exe: init target/$(CROSS_TRIPLE)/libeventbus.a target/$(CROSS_TRIPLE)/example.o
+	$(CC) -W -Ltarget/$(CROSS_TRIPLE) -o $@ $(LDFLAGS) target/$(CROSS_TRIPLE)/example.o -leventbus $(LDEXTRA)
 
-SRCS =  lib/parson.c  lib/osi_socket.c vertx.c test/test.c
+target/$(CROSS_TRIPLE)/example.o: test/test.c
+	$(CC) -W -Iinclude -c -o $@ $< $(CFLAGS)
 
-OBJS = $(SRCS:.c=.o)
+target/$(CROSS_TRIPLE)/libeventbus.a: init $(OBJS)
+	$(AR) crv $@ $(OBJS)
 
-MAIN = test
+target/$(CROSS_TRIPLE)/%.o: lib/%.c
+	$(CC) -W -Iinclude -c -o $@ $< $(CFLAGS)
 
-.PHONY: depend clean
+.PHONY: clean
 
-all:    $(MAIN)
-
-$(MAIN): $(OBJS) 
-		$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) $(LFLAGS) $(LIBS)
-
-.c.o:
-		$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+init:
+	@mkdir -p target/$(CROSS_TRIPLE)
 
 clean:
-		$(RM) *.o *~ $(MAIN)
+	@rm -f target
 
-depend: $(SRCS)
-		makedepend $(INCLUDES) $^
 
-# DO NOT DELETE THIS LINE -- make depend needs it
+
+# CFLAGS = -w -g
+
+# INCLUDES = -I./include
+
+# ifeq ($(TARGET), unix)
+#   #this is for Unix/Linux. Comment this if you are using Windows
+#   LIBS = -lpthread
+# else
+#   #this is for windows. Comment this if you are using Unix/Linux
+#   LIBS = -lws2_32 --enable-stdcall-fixup
+# endif
+
+# SRCS =  lib/parson.c  lib/osi_socket.c vertx.c
+
+# OBJS = $(SRCS:.c=.o)
+
+# MAIN = example
+
+# .PHONY: depend clean
+
+# all:    $(MAIN)
+
+# $(MAIN): eventbus.a test/test.o
+# 		$(CC) -L. test/test.o -leventbus $(LIBS) -o $(MAIN)
+
+# eventbus.a: $(OBJS)
+# 		$(AR) crv libeventbus.a $(OBJS)
+# 		@ranlib libeventbus.a
+
+# .c.o:
+# 		$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+
+# clean:
+# 		$(RM) $(OBJS) test/test.o *.a *~ $(MAIN)
+
+# depend: $(SRCS)
+# 		makedepend $(INCLUDES) $^
+
+# # DO NOT DELETE THIS LINE -- make depend needs it

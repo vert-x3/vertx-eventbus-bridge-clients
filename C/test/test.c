@@ -1,8 +1,11 @@
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "vertx.h"
- 
+
 
 void function(String *msg);
 int i=0;
@@ -11,8 +14,8 @@ int main(){
     //test(function);
     create_eventbus();
     start_eventbus();
-	 
-    printf("TESTS STARTED\n"); 
+
+    printf("TESTS STARTED\n");
 
     //register
     eventbus_register("pcs.status",function);
@@ -22,7 +25,7 @@ int main(){
     eventbus_send("pcs.status","pcs.status.c","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
 
     #ifdef _WIN32
-	Sleep(20); Sleep(20); 
+	  Sleep(20); Sleep(20);
     #endif // _WIN32
     #ifdef __unix__
     sleep(1);
@@ -41,7 +44,7 @@ int main(){
     eventbus_publish("pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     eventbus_send("pcs.status","pcs.status","{\"type\":\"Maths\"}","{\"message\":\"i++\"}");
     #ifdef _WIN32
-	Sleep(20); Sleep(20); 
+	Sleep(20); Sleep(20);
     #endif // _WIN32
     #ifdef __unix__
     sleep(1);

@@ -1,1 +1,0 @@
-# vertx-eventbus-bridge-clients

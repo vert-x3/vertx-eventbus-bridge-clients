@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/jponge/vertx-go-tcp-eventbus-bridge/eventbus"
+	"github.com/vert-x3/vertx-eventbus-bridge-clients/Go/eventbus"
 	"log"
 	"time"
 )

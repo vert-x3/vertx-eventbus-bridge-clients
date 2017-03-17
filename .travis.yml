@@ -1,0 +1,33 @@
+sudo: required
+
+services:
+- docker
+
+before_install:
+
+install:
+
+script:
+# C
+- docker run --rm -v $(pwd)/C:/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it multiarch/crossbuild
+  make
+- docker run --rm -v $(pwd)/C:/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it multiarch/crossbuild
+  make
+- docker run --rm -v $(pwd)/C:/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it multiarch/crossbuild
+  make
+- docker run --rm -v $(pwd)/C:/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it multiarch/crossbuild
+  make
+# C Sharp
+- docker run --rm -v $(pwd)/C#:/workdir:Z -it microsoft/dotnet:latest
+  /workdir/vertx-eventbus/build.sh
+# Node
+- docker run --rm -v $(pwd)/nodejs:/workdir:Z -it node:alpine
+  /workdir/build.sh
+# Python
+- docker run --rm -v $(pwd)/python:/workdir:Z -it python:alpine
+  /workdir/build.sh
+# Go
+- docker run --rm -v $(pwd)/Go:/workdir:Z -it golang:latest
+  /workdir/build.sh
+
+after_install:

@@ -1,0 +1,15 @@
+{
+  "name": "vertx3-tcp-eventbus-client",
+  "version": "3.4.0",
+  "description": "Vert.x3 TCP event bus client",
+  "dependencies": {
+    "node-uuid": "1.4.3"
+  },
+  "devDependencies": {
+    "mocha": "2.3.3"
+  },
+  "lib": "lib",
+  "scripts": {
+    "test": "mocha ./test/index.js"
+  }
+}

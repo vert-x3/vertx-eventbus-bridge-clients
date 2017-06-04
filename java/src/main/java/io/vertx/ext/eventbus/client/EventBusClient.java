@@ -1,10 +1,5 @@
 package io.vertx.ext.eventbus.client;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -35,11 +30,19 @@ public class EventBusClient {
   private static final DeliveryOptions DEFAULT_OPTIONS = new DeliveryOptions();
 
   public static EventBusClient tcp(int port, String host) {
-    return new EventBusClient(port, host, new TcpTransport());
+    return new EventBusClient(port, host, new TcpTransport(), new GsonCodec());
+  }
+
+  public static EventBusClient tcp(int port, String host, JsonCodec jsonCodec) {
+    return new EventBusClient(port, host, new TcpTransport(), jsonCodec);
   }
 
   public static EventBusClient websocket(int port, String host) {
-    return new EventBusClient(port, host, new WebSocketTransport());
+    return new EventBusClient(port, host, new WebSocketTransport(), new GsonCodec());
+  }
+
+  public static EventBusClient websocket(int port, String host, JsonCodec jsonCodec) {
+    return new EventBusClient(port, host, new WebSocketTransport(), jsonCodec);
   }
 
   private final NioEventLoopGroup group = new NioEventLoopGroup(1);
@@ -52,12 +55,14 @@ public class EventBusClient {
   private boolean connected;
   private Handler<Void> closeHandler;
   private ScheduledFuture<?> pingPeriodic;
+  private final JsonCodec codec;
 
-  public EventBusClient(int port, String host, Transport transport) {
+  public EventBusClient(int port, String host, Transport transport, JsonCodec jsonCodec) {
     this.port = port;
     this.host = host;
     this.transport = transport;
     this.bootstrap = new Bootstrap().group(group);
+    this.codec = jsonCodec;
   }
 
   private ArrayDeque<Handler<Transport>> pendingTasks = new ArrayDeque<>();
@@ -75,10 +80,8 @@ public class EventBusClient {
               pingPeriodic = group.next().scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
-                  JsonObject msg = new JsonObject();
-                  msg.addProperty("type", "ping");
-                  Gson gson = new Gson();
-                  send(gson.toJson(msg));
+                  Map<String, String> msg = Collections.singletonMap("type", "ping");
+                  send(codec.encode(msg));
                 }
               }, 100, 100, TimeUnit.MILLISECONDS);
               Handler<Transport> t;
@@ -92,8 +95,7 @@ public class EventBusClient {
         transport.messageHandler(new Handler<String>() {
           @Override
           public void handle(String json) {
-            Gson gson = new Gson();
-            JsonObject msg = gson.fromJson(json, JsonObject.class);
+            Map msg = codec.decode(json, Map.class);
             handleMsg(msg);
           }
         });
@@ -115,39 +117,36 @@ public class EventBusClient {
     }
   }
 
-  private void handleMsg(JsonObject msg) {
-    JsonElement type = msg.get("type");
+  private void handleMsg(Map msg) {
+    String type = (String) msg.get("type");
     if (type != null) {
-      switch (type.getAsString()) {
+      switch (type) {
         case "message":
         case "rec": {
-          String address = msg.get("address").getAsString();
+          String address = (String) msg.get("address");
           if (address == null) {
             // TCP bridge that replies an error...
             return;
           }
           HandlerList consumers = consumerMap.get(address);
           if (consumers != null) {
-            JsonObject body = msg.get("body").getAsJsonObject();
+            Map body = (Map) msg.get("body");
             Map<String, String> headers;
-            JsonElement msgHeaders = msg.get("headers");
-            if (msgHeaders != null) {
-              headers = new HashMap<>();
-              for (Map.Entry<String, JsonElement> entry : msgHeaders.getAsJsonObject().entrySet()) {
-                headers.put(entry.getKey(), entry.getValue().getAsString());
-              }
-            } else {
+            Map msgHeaders = (Map) msg.get("headers");
+            if (msgHeaders == null) {
               headers = Collections.emptyMap();
+            } else {
+              headers = (Map<String, String>) msgHeaders;
             }
             consumers.send(new Message(address, headers, body));
           }
           break;
         }
         case "err": {
-          String address = msg.get("address").getAsString();
-          String message = msg.get("message").getAsString();
-          int failureCode = msg.get("failureCode").getAsInt();
-          String failureType = msg.get("failureType").getAsString();
+          String address = (String) msg.get("address");
+          String message = (String) msg.get("message");
+//          int failureCode = msg.get("failureCode").getAsInt();
+//          String failureType = msg.get("failureType").getAsString();
           HandlerList consumers = consumerMap.get(address);
           if (consumers != null) {
             consumers.fail(new RuntimeException(message));
@@ -294,11 +293,10 @@ public class EventBusClient {
       }
       consumerMap.put(address, new HandlerList(handlers));
     }
-    Gson gson = new Gson();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("type", "register");
-    obj.addProperty("address", address);
-    final String msg = gson.toJson(obj);
+    Map<String, Object> obj = new HashMap<>();
+    obj.put("type", "register");
+    obj.put("address", address);
+    final String msg = codec.encode(obj);
     send(msg);
   }
 
@@ -320,11 +318,10 @@ public class EventBusClient {
         consumerMap.put(address, new HandlerList(new ArrayList<>(handlers)));
       }
     }
-    Gson gson = new Gson();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("type", "unregister");
-    obj.addProperty("address", address);
-    final String msg = gson.toJson(obj);
+    Map<String, Object> obj = new HashMap<>();
+    obj.put("type", "unregister");
+    obj.put("address", address);
+    final String msg = codec.encode(obj);
     send(msg);
   }
 
@@ -338,22 +335,17 @@ public class EventBusClient {
   }
 
   private void sendOrPublish(String address, Object body, Map<String, String> headers, String replyAddress, boolean send) {
-    Gson gson = new Gson();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("type", send ? "send" : "publish");
-    obj.addProperty("address", address);
+    Map<String, Object> obj = new HashMap<>();
+    obj.put("type", send ? "send" : "publish");
+    obj.put("address", address);
     if (replyAddress != null) {
-      obj.addProperty("replyAddress", replyAddress);
+      obj.put("replyAddress", replyAddress);
     }
     if (headers != null) {
-      JsonObject h = new JsonObject();
-      for (Map.Entry<String, String> header : headers.entrySet()) {
-        h.addProperty(header.getKey(), header.getValue());
-      }
-      obj.add("headers", h);
+      obj.put("headers", headers);
     }
-    setBody(obj, body);
-    final String msg = gson.toJson(obj);
+    obj.put("body", body);
+    final String msg = codec.encode(obj);
     execute(new Handler<Transport>() {
       @Override
       public void handle(Transport event) {
@@ -371,6 +363,7 @@ public class EventBusClient {
     });
   }
 
+/*
   private void setBody(JsonObject json, Object body) {
     if (body instanceof String) {
       json.addProperty("body", (String) body);
@@ -386,6 +379,7 @@ public class EventBusClient {
       throw new UnsupportedOperationException();
     }
   }
+*/
 
   private static class HandlerList {
 

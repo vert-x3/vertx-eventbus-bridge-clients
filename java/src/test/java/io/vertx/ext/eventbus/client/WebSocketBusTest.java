@@ -1,6 +1,5 @@
 package io.vertx.ext.eventbus.client;
 
-import com.google.gson.JsonObject;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -10,6 +9,7 @@ import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -42,14 +42,12 @@ public class WebSocketBusTest extends TcpBusTest {
       async.complete();
     });
     EventBusClient client = client();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("message", "hello");
     AtomicBoolean closed = new AtomicBoolean();
     client.closeHandler(v -> {
       System.out.println("closed");
       closed.set(true);
     });
-    client.send("server_addr", obj);
+    client.send("server_addr", Collections.singletonMap("message", "hello"));
     Thread.sleep(1000);
     ctx.assertFalse(closed.get());
   }

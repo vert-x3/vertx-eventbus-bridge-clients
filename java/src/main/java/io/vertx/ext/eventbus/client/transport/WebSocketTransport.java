@@ -69,6 +69,11 @@ public class WebSocketTransport extends Transport {
           ctx.flush();
         }
       }
+      @Override
+      public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        handlerCtx = null;
+        closeHandler.handle(null);
+      }
     });
 
 

@@ -44,6 +44,8 @@ public class EventBusClient {
   private ChannelFuture connectFuture;
   private final Transport transport;
   private boolean connected;
+  private Handler<Void> closeHandler;
+  private ScheduledFuture<?> pingPeriodic;
 
   public EventBusClient(int port, String host, Transport transport) {
     this.port = port;
@@ -64,6 +66,15 @@ public class EventBusClient {
           @Override
           public void handle(Void v) {
             synchronized (EventBusClient.this) {
+              pingPeriodic = group.next().scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                  JsonObject msg = new JsonObject();
+                  msg.addProperty("type", "ping");
+                  Gson gson = new Gson();
+                  send(gson.toJson(msg));
+                }
+              }, 100, 100, TimeUnit.MILLISECONDS);
               Handler<Transport> t;
               connected = true;
               while ((t = pendingTasks.poll()) != null) {
@@ -78,6 +89,17 @@ public class EventBusClient {
             Gson gson = new Gson();
             JsonObject msg = gson.fromJson(json, JsonObject.class);
             handleMsg(msg);
+          }
+        });
+        transport.closeHandler(new Handler<Void>() {
+          @Override
+          public void handle(Void event) {
+            synchronized (EventBusClient.this) {
+              if (closeHandler != null) {
+                closeHandler.handle(null);
+              }
+              pingPeriodic.cancel(false);
+            }
           }
         });
         bootstrap.channel(NioSocketChannel.class);
@@ -276,6 +298,11 @@ public class EventBusClient {
     obj.addProperty("address", address);
     final String msg = gson.toJson(obj);
     send(msg);
+  }
+
+  public synchronized EventBusClient closeHandler(Handler<Void> handler) {
+    closeHandler = handler;
+    return this;
   }
 
   public void close() {

@@ -142,19 +142,34 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testReplyTimeout(final TestContext ctx) {
+  public void testSendError(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client();
+    JsonObject obj = new JsonObject();
+    obj.addProperty("message", "hello");
+    client.send("server_addr", obj, new Handler<AsyncResult<Message<JsonObject>>>() {
+      @Override
+      public void handle(AsyncResult<Message<JsonObject>> event) {
+        ctx.assertTrue(event.failed());
+        async.complete();
+      }
+    });
+  }
+
+  @Test
+  public void testReplyFailure(final TestContext ctx) {
     final Async async = ctx.async();
     final AtomicBoolean received = new AtomicBoolean();
     vertx.eventBus().consumer("server_addr", msg -> {
       received.set(true);
+      msg.fail(123, "the_message");
     });
     EventBusClient client = client();
     JsonObject obj = new JsonObject();
     obj.addProperty("message", "hello");
-    client.send("server_addr", obj, new DeliveryOptions().setSendTimeout(100), new Handler<AsyncResult<Message<JsonObject>>>() {
+    client.send("server_addr", obj, new Handler<AsyncResult<Message<JsonObject>>>() {
       @Override
       public void handle(AsyncResult<Message<JsonObject>> event) {
-        ctx.assertTrue(received.get());
         ctx.assertTrue(event.failed());
         async.complete();
       }

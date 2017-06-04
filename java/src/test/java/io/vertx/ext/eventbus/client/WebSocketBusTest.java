@@ -20,6 +20,7 @@ public class WebSocketBusTest extends TcpBusTest {
   protected void setUpBridge(TestContext ctx) {
     Router router = Router.router(vertx);
     BridgeOptions opts = new BridgeOptions()
+        .setPingTimeout(300)
         .addInboundPermitted(new PermittedOptions().setAddressRegex(".*"))
         .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"));
     SockJSHandler ebHandler = SockJSHandler.create(vertx).bridge(opts);
@@ -33,40 +34,23 @@ public class WebSocketBusTest extends TcpBusTest {
     return EventBusClient.websocket(8080, "localhost");
   }
 
-  // Does not pass for TCP
+  // TCP does not use PING
   @Test
-  public void testSendError(final TestContext ctx) {
+  public void testPing(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
-    EventBusClient client = client();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("message", "hello");
-    client.send("server_addr", obj, new Handler<AsyncResult<Message<JsonObject>>>() {
-      @Override
-      public void handle(AsyncResult<Message<JsonObject>> event) {
-        ctx.assertTrue(event.failed());
-        async.complete();
-      }
-    });
-  }
-
-  // Does not pass for TCP
-  @Test
-  public void testReplyFailure(final TestContext ctx) {
-    final Async async = ctx.async();
-    final AtomicBoolean received = new AtomicBoolean();
     vertx.eventBus().consumer("server_addr", msg -> {
-      received.set(true);
-      msg.fail(123, "the_message");
+      async.complete();
     });
     EventBusClient client = client();
     JsonObject obj = new JsonObject();
     obj.addProperty("message", "hello");
-    client.send("server_addr", obj, new Handler<AsyncResult<Message<JsonObject>>>() {
-      @Override
-      public void handle(AsyncResult<Message<JsonObject>> event) {
-        ctx.assertTrue(event.failed());
-        async.complete();
-      }
+    AtomicBoolean closed = new AtomicBoolean();
+    client.closeHandler(v -> {
+      System.out.println("closed");
+      closed.set(true);
     });
+    client.send("server_addr", obj);
+    Thread.sleep(1000);
+    ctx.assertFalse(closed.get());
   }
 }

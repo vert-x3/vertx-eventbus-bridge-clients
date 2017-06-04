@@ -10,13 +10,18 @@ public abstract class Transport extends ChannelInitializer {
 
   protected Handler<Void> connectedHandler;
   protected Handler<String> messageHandler;
+  protected Handler<Void> closeHandler;
 
-  public void connectedHandler(Handler<Void> connectedHandler) {
-    this.connectedHandler = connectedHandler;
+  public void connectedHandler(Handler<Void> handler) {
+    connectedHandler = handler;
   }
 
-  public void messageHandler(Handler<String> messageHandler) {
-    this.messageHandler = messageHandler;
+  public void messageHandler(Handler<String> handler) {
+    messageHandler = handler;
+  }
+
+  public void closeHandler(Handler<Void> handler) {
+    closeHandler = handler;
   }
 
   public abstract void send(String message);

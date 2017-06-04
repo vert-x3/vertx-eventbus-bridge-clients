@@ -58,6 +58,11 @@ public class TcpTransport extends Transport {
           messageHandler.handle(json);
         }
       }
+      @Override
+      public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        handlerCtx = null;
+        closeHandler.handle(null);
+      }
     });
   }
 

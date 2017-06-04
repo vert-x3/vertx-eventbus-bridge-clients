@@ -1,5 +1,8 @@
 package io.vertx.ext.eventbus.client;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
@@ -11,6 +14,7 @@ public class DeliveryOptions {
   public static final long DEFAULT_TIMEOUT = 30 * 1000;
 
   private long timeout = DEFAULT_TIMEOUT;
+  private Map<String, String> headers;
 
   /**
    * Get the send timeout.
@@ -36,5 +40,17 @@ public class DeliveryOptions {
     }
     this.timeout = timeout;
     return this;
+  }
+
+  public DeliveryOptions addHeader(String key, String value) {
+    if (headers == null) {
+      headers = new HashMap<>();
+    }
+    headers.put(key, value);
+    return this;
+  }
+
+  Map<String, String> getHeaders() {
+    return headers;
   }
 }

@@ -214,4 +214,33 @@ public class TcpBusTest {
       }
     });
   }
+
+  @Test
+  public void testSendHeaders(final TestContext ctx) {
+    final Async async = ctx.async();
+    vertx.eventBus().consumer("server_addr", msg -> {
+      ctx.assertEquals(1, msg.headers().size());
+      ctx.assertEquals("foo_value", msg.headers().get("foo"));
+      async.complete();
+    });
+    EventBusClient client = client();
+    JsonObject obj = new JsonObject();
+    obj.addProperty("message", "hello");
+    client.send("server_addr", obj, new DeliveryOptions().addHeader("foo", "foo_value"));
+  }
+
+  @Test
+  public void testReceiveHeaders(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client();
+    client.consumer("client_addr", msg -> {
+      ctx.assertEquals(1, msg.headers().size());
+      ctx.assertEquals("foo_value", msg.headers().get("foo"));
+      async.complete();
+    });
+    vertx.eventBus().consumer("send_to_client", msg -> {
+      vertx.eventBus().send("client_addr", new io.vertx.core.json.JsonObject(), new io.vertx.core.eventbus.DeliveryOptions().addHeader("foo", "foo_value"));
+    });
+    client.send("send_to_client", new JsonObject());
+  }
 }

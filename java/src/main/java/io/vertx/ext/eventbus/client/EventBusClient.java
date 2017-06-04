@@ -1,8 +1,10 @@
 package io.vertx.ext.eventbus.client;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -15,7 +17,9 @@ import io.vertx.ext.eventbus.client.transport.WebSocketTransport;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,6 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class EventBusClient {
+
+  private static final DeliveryOptions DEFAULT_OPTIONS = new DeliveryOptions();
 
   public static EventBusClient tcp(int port, String host) {
     return new EventBusClient(port, host, new TcpTransport());
@@ -123,7 +129,17 @@ public class EventBusClient {
           HandlerList consumers = consumerMap.get(address);
           if (consumers != null) {
             JsonObject body = msg.get("body").getAsJsonObject();
-            consumers.send(new Message(address, body));
+            Map<String, String> headers;
+            JsonElement msgHeaders = msg.get("headers");
+            if (msgHeaders != null) {
+              headers = new HashMap<>();
+              for (Map.Entry<String, JsonElement> entry : msgHeaders.getAsJsonObject().entrySet()) {
+                headers.put(entry.getKey(), entry.getValue().getAsString());
+              }
+            } else {
+              headers = Collections.emptyMap();
+            }
+            consumers.send(new Message(address, headers, body));
           }
           break;
         }
@@ -154,7 +170,7 @@ public class EventBusClient {
    * @return a reference to this, so the API can be used fluently
    */
   public EventBusClient send(String address, Object message) {
-    send(address, message, new DeliveryOptions(), null);
+    send(address, message, DEFAULT_OPTIONS, null);
     return this;
   }
 
@@ -168,7 +184,19 @@ public class EventBusClient {
    * @return a reference to this, so the API can be used fluently
    */
   public <T> EventBusClient send(String address, Object message, final Handler<AsyncResult<Message<T>>> replyHandler) {
-    return send(address, message, new DeliveryOptions(), replyHandler);
+    return send(address, message, DEFAULT_OPTIONS, replyHandler);
+  }
+
+  /**
+   * Like {@link #send(String, Object)} but specifying {@code options} that can be used to configure the delivery.
+   *
+   * @param address  the address to send it to
+   * @param message  the message, may be {@code null}
+   * @param options  delivery options
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClient send(String address, Object message, DeliveryOptions options) {
+    return send(address, message, options, null);
   }
 
   /**
@@ -220,7 +248,7 @@ public class EventBusClient {
     } else {
       replyAddr = null;
     }
-    sendOrPublish(address, message, replyAddr, true);
+    sendOrPublish(address, message, options.getHeaders(), replyAddr, true);
     return this;
   }
 
@@ -234,7 +262,7 @@ public class EventBusClient {
    *
    */
   public EventBusClient publish(String address, Object message) {
-    sendOrPublish(address, message, null, false);
+    sendOrPublish(address, message, null, null, false);
     return this;
   }
 
@@ -309,13 +337,20 @@ public class EventBusClient {
     // Todo
   }
 
-  private void sendOrPublish(String address, Object body, String replyAddress, boolean send) {
+  private void sendOrPublish(String address, Object body, Map<String, String> headers, String replyAddress, boolean send) {
     Gson gson = new Gson();
     JsonObject obj = new JsonObject();
     obj.addProperty("type", send ? "send" : "publish");
     obj.addProperty("address", address);
     if (replyAddress != null) {
       obj.addProperty("replyAddress", replyAddress);
+    }
+    if (headers != null) {
+      JsonObject h = new JsonObject();
+      for (Map.Entry<String, String> header : headers.entrySet()) {
+        h.addProperty(header.getKey(), header.getValue());
+      }
+      obj.add("headers", h);
     }
     setBody(obj, body);
     final String msg = gson.toJson(obj);

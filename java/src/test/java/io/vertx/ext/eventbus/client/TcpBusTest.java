@@ -72,7 +72,24 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testSubscribe(final TestContext ctx) throws Exception {
+  public void testPublish(final TestContext ctx) {
+    int num = 3;
+    final Async async = ctx.async(num);
+    for (int i = 0;i < num;i++) {
+      vertx.eventBus().consumer("server_addr", msg -> {
+        ctx.assertEquals(new io.vertx.core.json.JsonObject().put("message", "hello"), msg.body());
+        async.countDown();
+      });
+    }
+    EventBusClient client = client();
+    JsonObject obj = new JsonObject();
+    obj.addProperty("message", "hello");
+    client.publish("server_addr", obj);
+    client.close();
+  }
+
+  @Test
+  public void testSubscribeToSend(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
     final EventBusClient client = client();
     client.consumer("client_addr", new Handler<Message<Object>>() {
@@ -87,6 +104,28 @@ public class TcpBusTest {
     client.send("send_to_client", new JsonObject());
     vertx.eventBus().consumer("send_to_client", msg -> {
       vertx.eventBus().send("client_addr", new io.vertx.core.json.JsonObject().put("message", "hello"));
+    });
+  }
+
+  @Test
+  public void testSubscribeToPublish(final TestContext ctx) throws Exception {
+    int num = 3;
+    final Async async = ctx.async(num);
+    final EventBusClient client = client();
+    for (int i = 0;i < num;i++) {
+      client.consumer("client_addr", new Handler<Message<Object>>() {
+        @Override
+        public void handle(Message<Object> event) {
+          JsonObject body = (JsonObject) event.body();
+          ctx.assertEquals("hello", body.get("message").getAsString());
+          async.countDown();
+          client.connect();
+        }
+      });
+    }
+    client.send("publish_to_client", new JsonObject());
+    vertx.eventBus().consumer("publish_to_client", msg -> {
+      vertx.eventBus().publish("client_addr", new io.vertx.core.json.JsonObject().put("message", "hello"));
     });
   }
 

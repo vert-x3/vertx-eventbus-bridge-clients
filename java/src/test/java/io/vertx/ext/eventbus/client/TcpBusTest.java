@@ -1,6 +1,5 @@
 package io.vertx.ext.eventbus.client;
 
-import com.google.gson.JsonObject;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.eventbus.ReplyFailure;
@@ -15,7 +14,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -65,9 +65,7 @@ public class TcpBusTest {
       async.complete();
     });
     EventBusClient client = client();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("message", "hello");
-    client.send("server_addr", obj);
+    client.send("server_addr", Collections.singletonMap("message", "hello"));
     client.close();
   }
 
@@ -82,9 +80,7 @@ public class TcpBusTest {
       });
     }
     EventBusClient client = client();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("message", "hello");
-    client.publish("server_addr", obj);
+    client.publish("server_addr", Collections.singletonMap("message", "hello"));
     client.close();
   }
 
@@ -95,13 +91,13 @@ public class TcpBusTest {
     client.consumer("client_addr", new Handler<Message<Object>>() {
       @Override
       public void handle(Message<Object> event) {
-        JsonObject body = (JsonObject) event.body();
-        ctx.assertEquals("hello", body.get("message").getAsString());
+        Map body = (Map) event.body();
+        ctx.assertEquals("hello", body.get("message"));
         async.complete();
         client.connect();
       }
     });
-    client.send("send_to_client", new JsonObject());
+    client.send("send_to_client", Collections.emptyMap());
     vertx.eventBus().consumer("send_to_client", msg -> {
       vertx.eventBus().send("client_addr", new io.vertx.core.json.JsonObject().put("message", "hello"));
     });
@@ -116,14 +112,14 @@ public class TcpBusTest {
       client.consumer("client_addr", new Handler<Message<Object>>() {
         @Override
         public void handle(Message<Object> event) {
-          JsonObject body = (JsonObject) event.body();
-          ctx.assertEquals("hello", body.get("message").getAsString());
+          Map body = (Map) event.body();
+          ctx.assertEquals("hello", body.get("message"));
           async.countDown();
           client.connect();
         }
       });
     }
-    client.send("publish_to_client", new JsonObject());
+    client.send("publish_to_client", Collections.emptyMap());
     vertx.eventBus().consumer("publish_to_client", msg -> {
       vertx.eventBus().publish("client_addr", new io.vertx.core.json.JsonObject().put("message", "hello"));
     });
@@ -137,13 +133,13 @@ public class TcpBusTest {
     consumer.set(client.consumer("client_addr", new Handler<Message<Object>>() {
       @Override
       public void handle(Message<Object> event) {
-        JsonObject body = (JsonObject) event.body();
-        ctx.assertEquals("hello", body.get("message").getAsString());
+        Map body = (Map) event.body();
+        ctx.assertEquals("hello", body.get("message"));
         consumer.get().unregister();
         async.complete();
       }
     }));
-    client.send("send_to_client", new JsonObject());
+    client.send("send_to_client", Collections.emptyMap());
     vertx.eventBus().consumer("send_to_client", msg -> {
       vertx.eventBus().send("client_addr", new io.vertx.core.json.JsonObject().put("message", "hello"));
     });
@@ -157,7 +153,7 @@ public class TcpBusTest {
       });
     });
     async.awaitSuccess(5000000);
-    client.send("send_to_client_fail", new JsonObject());
+    client.send("send_to_client_fail", Collections.emptyMap());
   }
 
   @Test
@@ -167,13 +163,11 @@ public class TcpBusTest {
       msg.reply(new io.vertx.core.json.JsonObject().put("message", "the_response"));
     });
     EventBusClient client = client();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("message", "hello");
-    client.send("server_addr", obj, new Handler<AsyncResult<Message<JsonObject>>>() {
+    client.send("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
       @Override
-      public void handle(AsyncResult<Message<JsonObject>> event) {
+      public void handle(AsyncResult<Message<Map>> event) {
         ctx.assertTrue(event.succeeded());
-        ctx.assertEquals("the_response", event.result().body().get("message").getAsString());
+        ctx.assertEquals("the_response", event.result().body().get("message"));
         async.complete();
       }
     });
@@ -184,11 +178,9 @@ public class TcpBusTest {
   public void testSendError(final TestContext ctx) {
     final Async async = ctx.async();
     EventBusClient client = client();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("message", "hello");
-    client.send("server_addr", obj, new Handler<AsyncResult<Message<JsonObject>>>() {
+    client.send("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
       @Override
-      public void handle(AsyncResult<Message<JsonObject>> event) {
+      public void handle(AsyncResult<Message<Map>> event) {
         ctx.assertTrue(event.failed());
         async.complete();
       }
@@ -204,11 +196,9 @@ public class TcpBusTest {
       msg.fail(123, "the_message");
     });
     EventBusClient client = client();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("message", "hello");
-    client.send("server_addr", obj, new Handler<AsyncResult<Message<JsonObject>>>() {
+    client.send("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
       @Override
-      public void handle(AsyncResult<Message<JsonObject>> event) {
+      public void handle(AsyncResult<Message<Map>> event) {
         ctx.assertTrue(event.failed());
         async.complete();
       }
@@ -224,9 +214,7 @@ public class TcpBusTest {
       async.complete();
     });
     EventBusClient client = client();
-    JsonObject obj = new JsonObject();
-    obj.addProperty("message", "hello");
-    client.send("server_addr", obj, new DeliveryOptions().addHeader("foo", "foo_value"));
+    client.send("server_addr", Collections.singletonMap("message", "hello"), new DeliveryOptions().addHeader("foo", "foo_value"));
   }
 
   @Test
@@ -241,6 +229,6 @@ public class TcpBusTest {
     vertx.eventBus().consumer("send_to_client", msg -> {
       vertx.eventBus().send("client_addr", new io.vertx.core.json.JsonObject(), new io.vertx.core.eventbus.DeliveryOptions().addHeader("foo", "foo_value"));
     });
-    client.send("send_to_client", new JsonObject());
+    client.send("send_to_client", Collections.emptyMap());
   }
 }

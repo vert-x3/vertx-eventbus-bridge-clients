@@ -363,24 +363,6 @@ public class EventBusClient {
     });
   }
 
-/*
-  private void setBody(JsonObject json, Object body) {
-    if (body instanceof String) {
-      json.addProperty("body", (String) body);
-    } else if (body instanceof Number) {
-      json.addProperty("body", (Number) body);
-    } else if (body instanceof Boolean) {
-      json.addProperty("body", (Character) body);
-    } else if (body instanceof Character) {
-      json.addProperty("body", (Character) body);
-    } else if (body instanceof JsonElement) {
-      json.add("body", (JsonElement) body);
-    } else {
-      throw new UnsupportedOperationException();
-    }
-  }
-*/
-
   private static class HandlerList {
 
     private final List<MessageHandler> handlers;

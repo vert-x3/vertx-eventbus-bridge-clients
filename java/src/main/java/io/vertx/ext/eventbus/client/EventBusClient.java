@@ -138,7 +138,8 @@ public class EventBusClient {
             } else {
               headers = (Map<String, String>) msgHeaders;
             }
-            consumers.send(new Message(address, headers, body));
+            String replyAddress = (String) msg.get("replyAddress");
+            consumers.send(new Message(this, address, headers, body, replyAddress));
           }
           break;
         }

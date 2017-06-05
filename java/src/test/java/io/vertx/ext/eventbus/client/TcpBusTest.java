@@ -206,6 +206,23 @@ public class TcpBusTest {
   }
 
   @Test
+  public void testReplyToServer(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client();
+    client.consumer("client_addr", msg -> {
+      ctx.assertNotNull(msg.replyAddress());
+      msg.reply(Collections.singletonMap("message", "bye"));
+    });
+    vertx.eventBus().consumer("server_addr", msg -> {
+      vertx.eventBus().send("client_addr", new io.vertx.core.json.JsonObject(), ctx.asyncAssertSuccess(reply -> {
+        ctx.assertEquals(new io.vertx.core.json.JsonObject().put("message", "bye"), reply.body());
+        async.complete();
+      }));
+    });
+    client.send("server_addr", Collections.singletonMap("message", "hello"));
+  }
+
+  @Test
   public void testSendHeaders(final TestContext ctx) {
     final Async async = ctx.async();
     vertx.eventBus().consumer("server_addr", msg -> {

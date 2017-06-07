@@ -283,48 +283,48 @@ public class EventBusClient {
     return consumer;
   }
 
-  public void register(MessageHandler<?> handler) {
+  private void register(MessageHandler<?> handler) {
     String address = handler.address();
-    consumerMap.compute(address, (k, v) -> {
+    HandlerList result = consumerMap.compute(address, (k, v) -> {
       if (v == null) {
-        return new HandlerList(0, Collections.singletonList(handler));
+        return new HandlerList(Collections.singletonList(handler));
       } else {
         ArrayList<MessageHandler> l = new ArrayList<>(v.handlers);
         l.add(handler);
-        return new HandlerList(v.current, l);
+        return new HandlerList(l);
       }
     });
-    Map<String, Object> obj = new HashMap<>();
-    obj.put("type", "register");
-    obj.put("address", address);
-    final String msg = codec.encode(obj);
-    send(msg);
+    if (result.handlers.size() == 1) {
+      Map<String, Object> obj = new HashMap<>();
+      obj.put("type", "register");
+      obj.put("address", address);
+      final String msg = codec.encode(obj);
+      send(msg);
+    }
   }
 
   void unregister(MessageHandler<?> handler) {
     String address = handler.address();
-    consumerMap.compute(address, (k, v) -> {
-      if (v == null) {
-        return null;
-      } else {
-        if (v.handlers.size() == 1) {
-          if (v.handlers.get(0) == handler) {
-            return null;
-          } else {
-            return v;
-          }
+    HandlerList result = consumerMap.compute(address, (k, v) -> {
+      if (v.handlers.size() == 1) {
+        if (v.handlers.get(0) == handler) {
+          return null;
         } else {
-          ArrayList<MessageHandler> list = new ArrayList<>(v.handlers);
-          list.remove(handler);
-          return new HandlerList(v.current, list);
+          return v;
         }
+      } else {
+        ArrayList<MessageHandler> list = new ArrayList<>(v.handlers);
+        list.remove(handler);
+        return new HandlerList(list);
       }
     });
-    Map<String, Object> obj = new HashMap<>();
-    obj.put("type", "unregister");
-    obj.put("address", address);
-    final String msg = codec.encode(obj);
-    send(msg);
+    if (result == null) {
+      Map<String, Object> obj = new HashMap<>();
+      obj.put("type", "unregister");
+      obj.put("address", address);
+      final String msg = codec.encode(obj);
+      send(msg);
+    }
   }
 
   public synchronized EventBusClient closeHandler(Handler<Void> handler) {
@@ -391,27 +391,12 @@ public class EventBusClient {
   private class HandlerList {
 
     private final List<MessageHandler> handlers;
-    private long current = 0;
 
-    public HandlerList(long current, List<MessageHandler> handlers) {
-      this.current = current;
+    public HandlerList(List<MessageHandler> handlers) {
       this.handlers = handlers;
     }
 
     void send(Message message) {
-      int s = handlers.size();
-      if (s > 0) {
-        int index = (int) current++ % s;
-        MessageHandler handler = handlers.get(index);
-        try {
-          handler.handleMessage(message);
-        } catch (Throwable t) {
-          handleError(t);
-        }
-      }
-    }
-
-    void publish(Message message) {
       for (MessageHandler handler : handlers) {
         try {
           handler.handleMessage(message);

@@ -85,7 +85,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testSubscribeToSend(final TestContext ctx) throws Exception {
+  public void testSubscribe(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
     final EventBusClient client = client();
     client.consumer("client_addr", new Handler<Message<Object>>() {
@@ -104,7 +104,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testSubscribeToPublish(final TestContext ctx) throws Exception {
+  public void testSubscribeSeveralHandlers(final TestContext ctx) throws Exception {
     int num = 3;
     final Async async = ctx.async(num);
     final EventBusClient client = client();

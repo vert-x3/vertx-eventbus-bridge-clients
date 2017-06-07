@@ -248,4 +248,52 @@ public class TcpBusTest {
     });
     client.send("send_to_client", Collections.emptyMap());
   }
+
+  @Test
+  public void testFailInConsumer(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client();
+    RuntimeException failure = new RuntimeException();
+    client.exceptionHandler(err -> {
+      ctx.assertEquals(failure, err);
+      async.complete();
+    });
+    client.consumer("client_addr", msg -> {
+      throw failure;
+    });
+    vertx.eventBus().consumer("send_to_client", msg -> {
+      vertx.eventBus().send("client_addr", new io.vertx.core.json.JsonObject());
+    });
+    client.send("send_to_client", Collections.emptyMap());
+  }
+
+  @Test
+  public void testFailInReplyMessageHandler(final TestContext ctx) {
+    testFailInReplyHandler(ctx, false);
+  }
+
+  @Test
+  public void testFailInReplyFailureHandler(final TestContext ctx) {
+    testFailInReplyHandler(ctx, true);
+  }
+
+  private void testFailInReplyHandler(final TestContext ctx, boolean fail) {
+    final Async async = ctx.async();
+    EventBusClient client = client();
+    RuntimeException failure = new RuntimeException();
+    client.exceptionHandler(err -> {
+      ctx.assertEquals(failure, err);
+      async.complete();
+    });
+    vertx.eventBus().consumer("server_addr", msg -> {
+      if (fail) {
+        msg.fail(0, "whatever");
+      } else {
+        msg.reply(new io.vertx.core.json.JsonObject());
+      }
+    });
+    client.send("server_addr", Collections.emptyMap(), reply -> {
+      throw failure;
+    });
+  }
 }

@@ -58,6 +58,7 @@ public class EventBusClient {
   private Handler<Void> closeHandler;
   private ScheduledFuture<?> pingPeriodic;
   private final JsonCodec codec;
+  private volatile Handler<Throwable> exceptionHandler;
 
   public EventBusClient(int port, String host, Transport transport, JsonCodec jsonCodec) {
     this.port = port;
@@ -335,6 +336,29 @@ public class EventBusClient {
     // Todo
   }
 
+  /**
+   * Set a default exception handler.
+   *
+   * @param handler the exception handler
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClient exceptionHandler(Handler<Throwable> handler) {
+    exceptionHandler = handler;
+    return this;
+  }
+
+  private void handleError(Throwable t) {
+    Handler<Throwable> handler = this.exceptionHandler;
+    if (handler != null) {
+      try {
+        handler.handle(t);
+      } catch (Exception e) {
+        // Exception handler should not throw
+        e.printStackTrace();
+      }
+    }
+  }
+
   private void sendOrPublish(String address, Object body, Map<String, String> headers, String replyAddress, boolean send) {
     Map<String, Object> obj = new HashMap<>();
     obj.put("type", send ? "send" : "publish");
@@ -364,7 +388,7 @@ public class EventBusClient {
     });
   }
 
-  private static class HandlerList {
+  private class HandlerList {
 
     private final List<MessageHandler> handlers;
     private long current = 0;
@@ -378,22 +402,33 @@ public class EventBusClient {
       int s = handlers.size();
       if (s > 0) {
         int index = (int) current++ % s;
-        handlers.get(index).handleMessage(message);
+        MessageHandler handler = handlers.get(index);
+        try {
+          handler.handleMessage(message);
+        } catch (Throwable t) {
+          handleError(t);
+        }
       }
     }
 
     void publish(Message message) {
       for (MessageHandler handler : handlers) {
-        handler.handleMessage(message);
+        try {
+          handler.handleMessage(message);
+        } catch (Throwable t) {
+          handleError(t);
+        }
       }
     }
 
     void fail(Throwable cause) {
       for (MessageHandler handler : handlers) {
-        handler.handleError(cause);
+        try {
+          handler.handleError(cause);
+        } catch (Throwable t) {
+          handleError(t);
+        }
       }
     }
-
   }
-
 }

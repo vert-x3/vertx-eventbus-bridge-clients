@@ -1,4 +1,4 @@
-package io.vertx.ext.eventbus.client;
+package io.vertx.ext.eventbus.client.json;
 
 import com.google.gson.Gson;
 

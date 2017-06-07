@@ -152,7 +152,7 @@ public class TcpBusTest {
         async2.complete();
       });
     });
-    async.awaitSuccess(5000000);
+    async.awaitSuccess(5000);
     client.send("send_to_client_fail", Collections.emptyMap());
   }
 

@@ -5,6 +5,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.ScheduledFuture;
+import io.vertx.ext.eventbus.client.json.GsonCodec;
+import io.vertx.ext.eventbus.client.json.JsonCodec;
 import io.vertx.ext.eventbus.client.transport.TcpTransport;
 import io.vertx.ext.eventbus.client.transport.Transport;
 import io.vertx.ext.eventbus.client.transport.WebSocketTransport;

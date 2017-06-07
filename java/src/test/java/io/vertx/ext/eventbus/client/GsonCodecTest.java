@@ -1,6 +1,8 @@
 package io.vertx.ext.eventbus.client;
 
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.eventbus.client.json.GsonCodec;
+import io.vertx.ext.eventbus.client.json.JsonCodec;
 import org.junit.Test;
 
 import java.util.Collections;

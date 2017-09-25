@@ -31,7 +31,7 @@ public class WebSocketBusTest extends TcpBusTest {
   }
 
   protected EventBusClient client() {
-    return EventBusClient.websocket(8080, "localhost");
+    return EventBusClient.websocket(new EventBusClientOptions());
   }
 
   // TCP does not use PING

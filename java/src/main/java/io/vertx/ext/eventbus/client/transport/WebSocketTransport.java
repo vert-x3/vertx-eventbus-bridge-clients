@@ -16,6 +16,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.vertx.ext.eventbus.client.EventBusClientOptions;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -29,12 +30,22 @@ public class WebSocketTransport extends Transport {
   private boolean reading;
   private boolean flush;
 
+  public WebSocketTransport(EventBusClientOptions options) {
+    super(options);
+  }
+
   @Override
   protected void initChannel(Channel ch) throws Exception {
 
-    URI uri = new URI("ws://" + "localhost:8080" + "/eventbus/websocket");
+    StringBuilder url = new StringBuilder();
+    url.append("ws");
+    if(this.options.isSsl()) {
+      url.append("s");
+    }
+    url.append("://").append(this.options.getHost()).append(this.options.getWebSocketTransportOptions().getPath());
 
-    WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+    WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.
+      newHandshaker(new URI(url.toString()), WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
     WebSocketClientProtocolHandler handler = new WebSocketClientProtocolHandler(handshaker);
 
     ChannelPipeline pipeline = ch.pipeline();
@@ -75,10 +86,6 @@ public class WebSocketTransport extends Transport {
         closeHandler.handle(null);
       }
     });
-
-
-
-
   }
 
   @Override

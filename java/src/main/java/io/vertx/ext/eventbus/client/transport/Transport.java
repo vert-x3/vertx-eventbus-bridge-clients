@@ -1,6 +1,7 @@
 package io.vertx.ext.eventbus.client.transport;
 
 import io.netty.channel.ChannelInitializer;
+import io.vertx.ext.eventbus.client.EventBusClientOptions;
 import io.vertx.ext.eventbus.client.Handler;
 
 /**
@@ -8,9 +9,15 @@ import io.vertx.ext.eventbus.client.Handler;
  */
 public abstract class Transport extends ChannelInitializer {
 
+  protected EventBusClientOptions options;
+
   protected Handler<Void> connectedHandler;
   protected Handler<String> messageHandler;
   protected Handler<Void> closeHandler;
+
+  public Transport(EventBusClientOptions options) {
+    this.options = options;
+  }
 
   public void connectedHandler(Handler<Void> handler) {
     connectedHandler = handler;

@@ -6,6 +6,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import io.vertx.ext.eventbus.client.EventBusClientOptions;
+import io.vertx.ext.eventbus.client.transport.Transport;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -18,6 +20,10 @@ public class TcpTransport extends Transport {
   private ChannelHandlerContext handlerCtx;
   private boolean reading;
   private boolean flush;
+
+  public TcpTransport(EventBusClientOptions options) {
+    super(options);
+  }
 
   @Override
   protected void initChannel(Channel ch) throws Exception {

@@ -44,7 +44,7 @@ public class TcpBusTest {
   }
 
   protected EventBusClient client() {
-    return EventBusClient.tcp(7000, "localhost");
+    return EventBusClient.tcp(new EventBusClientOptions().setPort(7000));
   }
 
   @After

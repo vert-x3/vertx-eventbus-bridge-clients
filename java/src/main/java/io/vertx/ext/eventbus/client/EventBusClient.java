@@ -7,6 +7,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.vertx.ext.eventbus.client.json.GsonCodec;
 import io.vertx.ext.eventbus.client.json.JsonCodec;
+import io.vertx.ext.eventbus.client.options.TcpTransportOptions;
+import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
 import io.vertx.ext.eventbus.client.transport.TcpTransport;
 import io.vertx.ext.eventbus.client.transport.Transport;
 import io.vertx.ext.eventbus.client.transport.WebSocketTransport;
@@ -31,40 +33,57 @@ public class EventBusClient {
 
   private static final DeliveryOptions DEFAULT_OPTIONS = new DeliveryOptions();
 
-  public static EventBusClient tcp(int port, String host) {
-    return new EventBusClient(port, host, new TcpTransport(), new GsonCodec());
+  public static EventBusClient tcp(EventBusClientOptions eventBusClientOptions) {
+    return EventBusClient.tcp(eventBusClientOptions, new GsonCodec());
   }
 
-  public static EventBusClient tcp(int port, String host, JsonCodec jsonCodec) {
-    return new EventBusClient(port, host, new TcpTransport(), jsonCodec);
+  public static EventBusClient tcp(EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
+
+    if (eventBusClientOptions == null) {
+      eventBusClientOptions = new EventBusClientOptions();
+    }
+    if(eventBusClientOptions.getTcpTransportOptions() == null) {
+      eventBusClientOptions.setTcpTransportOptions(new TcpTransportOptions());
+    }
+
+    return new EventBusClient(new TcpTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
   }
 
-  public static EventBusClient websocket(int port, String host) {
-    return new EventBusClient(port, host, new WebSocketTransport(), new GsonCodec());
+  public static EventBusClient websocket(EventBusClientOptions eventBusClientOptions) {
+    return EventBusClient.websocket(eventBusClientOptions, new GsonCodec());
   }
 
-  public static EventBusClient websocket(int port, String host, JsonCodec jsonCodec) {
-    return new EventBusClient(port, host, new WebSocketTransport(), jsonCodec);
+  public static EventBusClient websocket(EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
+
+    if (eventBusClientOptions == null) {
+      eventBusClientOptions = new EventBusClientOptions();
+    }
+    if(eventBusClientOptions.getWebSocketTransportOptions() == null) {
+      eventBusClientOptions.setWebSocketTransportOptions(new WebSocketTransportOptions());
+    }
+
+    return new EventBusClient(new WebSocketTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
   }
 
-  private final NioEventLoopGroup group = new NioEventLoopGroup(1);
-  private final ConcurrentMap<String, HandlerList> consumerMap = new ConcurrentHashMap<>();
-  private final int port;
-  private final String host;
-  private Bootstrap bootstrap;
-  private ChannelFuture connectFuture;
   private final Transport transport;
-  private boolean connected;
-  private Handler<Void> closeHandler;
-  private ScheduledFuture<?> pingPeriodic;
+  private final NioEventLoopGroup group = new NioEventLoopGroup(1);
+  private Bootstrap bootstrap;
+  private final EventBusClientOptions eventBusClientOptions;
   private final JsonCodec codec;
-  private volatile Handler<Throwable> exceptionHandler;
 
-  public EventBusClient(int port, String host, Transport transport, JsonCodec jsonCodec) {
-    this.port = port;
-    this.host = host;
+  private final ConcurrentMap<String, HandlerList> consumerMap = new ConcurrentHashMap<>();
+  private ScheduledFuture<?> pingPeriodic;
+  private ChannelFuture connectFuture;
+  private boolean connected;
+
+  private Handler<Handler<Void>> connectedHandler;
+  private volatile Handler<Throwable> exceptionHandler;
+  private Handler<Void> closeHandler;
+
+  public EventBusClient(Transport transport, EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
     this.transport = transport;
-    this.bootstrap = new Bootstrap().group(group);
+    this.bootstrap = new Bootstrap().group(this.group);
+    this.eventBusClientOptions = eventBusClientOptions;
     this.codec = jsonCodec;
   }
 
@@ -86,11 +105,23 @@ public class EventBusClient {
                   Map<String, String> msg = Collections.singletonMap("type", "ping");
                   send(codec.encode(msg));
                 }
-              }, 100, 100, TimeUnit.MILLISECONDS);
-              Handler<Transport> t;
+              },
+                EventBusClient.this.eventBusClientOptions.getPingInterval(),
+                EventBusClient.this.eventBusClientOptions.getPingInterval(),
+                TimeUnit.MILLISECONDS);
               connected = true;
-              while ((t = pendingTasks.poll()) != null) {
-                t.handle(transport);
+
+              if(EventBusClient.this.connectedHandler != null)  {
+
+                EventBusClient.this.connectedHandler.handle(new Handler<Void>() {
+                  @Override
+                  public void handle(Void v) {
+                    EventBusClient.this.handlePendingTasks();
+                  }
+                });
+              }
+              else  {
+                EventBusClient.this.handlePendingTasks();
               }
             }
           }
@@ -115,8 +146,16 @@ public class EventBusClient {
         });
         bootstrap.channel(NioSocketChannel.class);
         bootstrap.handler(transport);
-        connectFuture = bootstrap.connect(host, port);
+        connectFuture = bootstrap.connect(EventBusClient.this.eventBusClientOptions.getHost(), EventBusClient.this.eventBusClientOptions.getPort());
       }
+    }
+  }
+
+  private void handlePendingTasks()
+  {
+    Handler<Transport> t;
+    while ((t = this.pendingTasks.poll()) != null) {
+      t.handle(this.transport);
     }
   }
 
@@ -327,24 +366,46 @@ public class EventBusClient {
     }
   }
 
-  public synchronized EventBusClient closeHandler(Handler<Void> handler) {
-    closeHandler = handler;
+  /**
+   * Set a connected handler, which is called everytime the connection is (re)established.
+   *
+   * The close handler is being handed over a Future, which it must complete in order for any queued messages
+   * to be flushed. This allows the client to perform any initializing operations such as authorization before
+   * sending other messages to the server.
+   *
+   * @param connectedHandler the connected handler
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClient connectedHandler(Handler<Handler<Void>> connectedHandler) {
+    this.connectedHandler = connectedHandler;
     return this;
-  }
-
-  public void close() {
-    // Todo
   }
 
   /**
    * Set a default exception handler.
    *
-   * @param handler the exception handler
+   * @param exceptionHandler the exception handler
    * @return a reference to this, so the API can be used fluently
    */
-  public EventBusClient exceptionHandler(Handler<Throwable> handler) {
-    exceptionHandler = handler;
+  public EventBusClient exceptionHandler(Handler<Throwable> exceptionHandler) {
+    this.exceptionHandler = exceptionHandler;
     return this;
+  }
+
+  /**
+   * Set a default close handler.
+   *
+   * @param closeHandler the close handler
+   * @return a reference to this, so the API can be used fluently
+   */
+
+  public synchronized EventBusClient closeHandler(Handler<Void> closeHandler) {
+    this.closeHandler = closeHandler;
+    return this;
+  }
+
+  public void close() {
+    // Todo
   }
 
   private void handleError(Throwable t) {

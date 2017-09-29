@@ -3,6 +3,7 @@ package io.vertx.ext.eventbus.client;
 // import io.vertx.ext.eventbus.client.options.ProxyOptions;
 import io.vertx.ext.eventbus.client.options.TcpTransportOptions;
 // import io.vertx.ext.eventbus.client.options.TrustOptions;
+import io.vertx.ext.eventbus.client.options.TrustOptions;
 import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
 
 /**
@@ -80,11 +81,11 @@ public class EventBusClientOptions {
   private boolean verifyHost;
   private boolean trustAll;
   // private ProxyOptions proxyOptions; https://github.com/eclipse/vert.x/blob/master/src/main/java/io/vertx/core/net/ProxyOptions.java
-  // private TrustOptions trustOptions; https://github.com/eclipse/vert.x/blob/master/src/main/java/io/vertx/core/net/TrustOptions.java and others
+  private TrustOptions trustOptions;
 
-  private boolean autoReconnect;
-  private int autoReconnectInterval;
-  private int maxAutoReconnectTries;
+  private boolean autoReconnect;// TODO: develop, apply
+  private int autoReconnectInterval;// TODO: develop, apply
+  private int maxAutoReconnectTries;// TODO: develop, apply
 
   /**
    * Default constructor
@@ -104,7 +105,7 @@ public class EventBusClientOptions {
     this.verifyHost = DEFAULT_VERIFY_HOST;
     this.trustAll = DEFAULT_TRUST_ALL;
     // this.proxyOptions = null;
-    // this.trustOptions = null;
+    this.trustOptions = null;
 
     this.autoReconnect = DEFAULT_AUTO_RECONNECT;
     this.autoReconnectInterval = DEFAULT_AUTO_RECONNECT_INTERVAL;
@@ -333,19 +334,19 @@ public class EventBusClientOptions {
    * @param trustOptions trust options object
    * @return a reference to this, so the API can be used fluently
    */
-  // public EventBusClientOptions setTrustOptions(TrustOptions trustOptions) {
-  //     this.trustOptions = trustOptions;
-  //     return this;
-  // }
+  public EventBusClientOptions setTrustOptions(TrustOptions trustOptions) {
+      this.trustOptions = trustOptions;
+      return this;
+  }
 
   /**
    * Get trust options for SSL / TLS connections
    *
    * @return trust options
    */
-  // public TrustOptions getTrustOptions() {
-  //     return this.trustOptions;
-  // }
+  public TrustOptions getTrustOptions() {
+      return this.trustOptions;
+  }
 
   /**
    * Are auto reconnects enabled, even if the client does not try to send a message?

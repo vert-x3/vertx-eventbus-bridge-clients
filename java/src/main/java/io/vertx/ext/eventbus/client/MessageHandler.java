@@ -1,14 +1,28 @@
 package io.vertx.ext.eventbus.client;
 
+import java.util.concurrent.ScheduledFuture;
+
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-interface MessageHandler<T> {
+abstract class MessageHandler<T> {
 
-  String address();
+  private ScheduledFuture<?> timeout;
 
-  void handleMessage(Message<T> msg);
+  public abstract String address();
 
-  void handleError(Throwable err);
+  public abstract void handleMessage(Message<T> msg);
 
+  public void handleError(Throwable err) {
+  }
+
+  public void setTimeout(ScheduledFuture<?> timeout) {
+    this.timeout = timeout;
+  }
+
+  void cancelTimeout() {
+    if(this.timeout != null && !this.timeout.isCancelled()) {
+      this.timeout.cancel(false);
+    }
+  }
 }

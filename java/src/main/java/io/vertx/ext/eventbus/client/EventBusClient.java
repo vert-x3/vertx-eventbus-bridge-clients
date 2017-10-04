@@ -1,6 +1,7 @@
 package io.vertx.ext.eventbus.client;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -30,8 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class EventBusClient {
-
-  private static final DeliveryOptions DEFAULT_OPTIONS = new DeliveryOptions();
 
   public static EventBusClient tcp(EventBusClientOptions eventBusClientOptions) {
     return EventBusClient.tcp(eventBusClientOptions, new GsonCodec());
@@ -65,6 +64,7 @@ public class EventBusClient {
     return new EventBusClient(new WebSocketTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
   }
 
+  private DeliveryOptions defaultOptions = new DeliveryOptions();
   private final Transport transport;
   private final NioEventLoopGroup group = new NioEventLoopGroup(1);
   private Bootstrap bootstrap;
@@ -74,7 +74,11 @@ public class EventBusClient {
   private final ConcurrentMap<String, HandlerList> consumerMap = new ConcurrentHashMap<>();
   private ScheduledFuture<?> pingPeriodic;
   private ChannelFuture connectFuture;
+  private Channel channel;
+  private ScheduledFuture<?> reconnectFuture;
+  private boolean initializedTransport;
   private boolean connected;
+  private int reconnectTries;
 
   private Handler<Handler<Void>> connectedHandler;
   private volatile Handler<Throwable> exceptionHandler;
@@ -94,69 +98,106 @@ public class EventBusClient {
       task.handle(transport);
     } else {
       pendingTasks.add(task);
-      if (connectFuture == null) {
-        transport.connectedHandler(new Handler<Void>() {
-          @Override
-          public void handle(Void v) {
-            synchronized (EventBusClient.this) {
-              pingPeriodic = group.next().scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                  Map<String, String> msg = Collections.singletonMap("type", "ping");
-                  send(codec.encode(msg));
-                }
-              },
-                EventBusClient.this.eventBusClientOptions.getPingInterval(),
-                EventBusClient.this.eventBusClientOptions.getPingInterval(),
-                TimeUnit.MILLISECONDS);
-              connected = true;
-
-              if(EventBusClient.this.connectedHandler != null)  {
-
-                EventBusClient.this.connectedHandler.handle(new Handler<Void>() {
-                  @Override
-                  public void handle(Void v) {
-                    EventBusClient.this.handlePendingTasks();
-                  }
-                });
-              }
-              else  {
-                EventBusClient.this.handlePendingTasks();
-              }
-            }
-          }
-        });
-        transport.messageHandler(new Handler<String>() {
-          @Override
-          public void handle(String json) {
-            Map msg = codec.decode(json, Map.class);
-            handleMsg(msg);
-          }
-        });
-        transport.closeHandler(new Handler<Void>() {
-          @Override
-          public void handle(Void event) {
-            synchronized (EventBusClient.this) {
-              if (closeHandler != null) {
-                closeHandler.handle(null);
-              }
-              pingPeriodic.cancel(false);
-            }
-          }
-        });
-        bootstrap.channel(NioSocketChannel.class);
-        bootstrap.handler(transport);
-        connectFuture = bootstrap.connect(EventBusClient.this.eventBusClientOptions.getHost(), EventBusClient.this.eventBusClientOptions.getPort());
+      if (connectFuture == null && reconnectFuture == null) {
+        initializeTransport();
+        connectTransport();
       }
     }
   }
 
-  private void handlePendingTasks()
-  {
+  private void initializeTransport() {
+    if(initializedTransport) {
+      return;
+    }
+
+    transport.connectedHandler(new Handler<Void>() {
+      @Override
+      public void handle(Void v) {
+        synchronized (EventBusClient.this) {
+          pingPeriodic = group.next().scheduleAtFixedRate(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                              Map<String, String> msg = Collections.singletonMap("type", "ping");
+                                                              send(codec.encode(msg));
+                                                            }
+                                                          },
+            EventBusClient.this.eventBusClientOptions.getPingInterval(),
+            EventBusClient.this.eventBusClientOptions.getPingInterval(),
+            TimeUnit.MILLISECONDS);
+          connected = true;
+          channel = connectFuture.channel();
+          connectFuture = null;
+
+          if(EventBusClient.this.connectedHandler != null)  {
+
+            EventBusClient.this.connectedHandler.handle(new Handler<Void>() {
+              @Override
+              public void handle(Void v) {
+                EventBusClient.this.handlePendingTasks();
+              }
+            });
+          }
+          else  {
+            EventBusClient.this.handlePendingTasks();
+          }
+        }
+      }
+    });
+    transport.messageHandler(new Handler<String>() {
+      @Override
+      public void handle(String json) {
+        Map msg = codec.decode(json, Map.class);
+        handleMsg(msg);
+      }
+    });
+    transport.closeHandler(new Handler<Void>() {
+      @Override
+      public void handle(Void event) {
+        synchronized (EventBusClient.this) {
+          connected = false;
+          channel = null;
+          if (closeHandler != null) {
+            closeHandler.handle(null);
+          }
+          pingPeriodic.cancel(false);
+
+          if(EventBusClient.this.eventBusClientOptions.isAutoReconnect() &&
+            (EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries() == 0 ||
+              reconnectTries < EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries()))
+          {
+            reconnectFuture = group.next().schedule(new Runnable() {
+              @Override
+              public void run() {
+                connectTransport();
+                reconnectFuture = null;
+              }
+            }, EventBusClient.this.eventBusClientOptions.getAutoReconnectInterval(), TimeUnit.MILLISECONDS);
+            ++reconnectTries;
+          }
+        }
+      }
+    });
+
+    bootstrap.channel(NioSocketChannel.class);
+    bootstrap.handler(transport);
+
+    initializedTransport = true;
+  }
+
+  private void connectTransport() {
+    connectFuture = bootstrap.connect(EventBusClient.this.eventBusClientOptions.getHost(), EventBusClient.this.eventBusClientOptions.getPort());
+  }
+
+  private void handlePendingTasks() {
     Handler<Transport> t;
     while ((t = this.pendingTasks.poll()) != null) {
       t.handle(this.transport);
     }
+
+    // TODO: track for each handler whether they actually have been registered since the last successful connection attempt and only reconnect if need be
+    this.consumerMap.forEach((address, handlerList) -> {
+      sendRegistration(address);
+    });
   }
 
   private void handleMsg(Map msg) {
@@ -199,7 +240,21 @@ public class EventBusClient {
     }
   }
 
-  public  void connect() {
+  public EventBusClient setDefaultDeliveryOptions(DeliveryOptions defaultOptions) {
+    this.defaultOptions = defaultOptions;
+    return this;
+  }
+
+  public EventBusClient connect() {
+    initializeTransport();
+    connectTransport();
+    return this;
+  }
+
+  public void close() {
+    if(channel != null) {
+      channel.close();
+    }
   }
 
   /**
@@ -212,7 +267,7 @@ public class EventBusClient {
    * @return a reference to this, so the API can be used fluently
    */
   public EventBusClient send(String address, Object message) {
-    send(address, message, DEFAULT_OPTIONS, null);
+    send(address, message, defaultOptions, null);
     return this;
   }
 
@@ -226,7 +281,7 @@ public class EventBusClient {
    * @return a reference to this, so the API can be used fluently
    */
   public <T> EventBusClient send(String address, Object message, final Handler<AsyncResult<Message<T>>> replyHandler) {
-    return send(address, message, DEFAULT_OPTIONS, replyHandler);
+    return send(address, message, defaultOptions, replyHandler);
   }
 
   /**
@@ -255,25 +310,15 @@ public class EventBusClient {
     final String replyAddr;
     if (replyHandler != null) {
       final AtomicBoolean registered = new AtomicBoolean(true);
-      long delay = options.getSendTimeout();
-      final ScheduledFuture<?> timeout = group.next().schedule(new Runnable() {
-        @Override
-        public void run() {
-          if (registered.compareAndSet(true, false)) {
-            replyHandler.handle(new AsyncResult<Message<T>>(null, new TimeoutException()));
-          }
-        }
-      }, delay, TimeUnit.MILLISECONDS);
       replyAddr = UUID.randomUUID().toString();
-      register(new MessageHandler<T>() {
+
+      MessageHandler<T> messageHandler = new MessageHandler<T>() {
         @Override
-        public String address() {
-          return replyAddr;
-        }
+        public String address() { return replyAddr; };
         @Override
         public void handleMessage(Message<T> msg) {
           if (registered.compareAndSet(true, false)) {
-            timeout.cancel(false);
+            this.cancelTimeout();
             unregister(this);
             replyHandler.handle(new AsyncResult<>(msg, null));
           }
@@ -281,12 +326,21 @@ public class EventBusClient {
         @Override
         public void handleError(Throwable err) {
           if (registered.compareAndSet(true, false)) {
-            timeout.cancel(false);
+            this.cancelTimeout();
             unregister(this);
             replyHandler.handle(new AsyncResult<Message<T>>(null, err));
           }
         }
-      });
+      };
+
+      messageHandler.setTimeout(group.next().schedule(new Runnable() {
+        @Override
+        public void run() {
+          messageHandler.handleError(new TimeoutException());
+        }
+      }, options.getSendTimeout(), TimeUnit.MILLISECONDS));
+
+      register(messageHandler);
     } else {
       replyAddr = null;
     }
@@ -334,12 +388,17 @@ public class EventBusClient {
       }
     });
     if (result.handlers.size() == 1) {
-      Map<String, Object> obj = new HashMap<>();
-      obj.put("type", "register");
-      obj.put("address", address);
-      final String msg = codec.encode(obj);
-      send(msg);
+      sendRegistration(address);
     }
+  }
+
+  private void sendRegistration(String address)
+  {
+    Map<String, Object> obj = new HashMap<>();
+    obj.put("type", "register");
+    obj.put("address", address);
+    final String msg = codec.encode(obj);
+    send(msg);
   }
 
   void unregister(MessageHandler<?> handler) {
@@ -402,10 +461,6 @@ public class EventBusClient {
   public synchronized EventBusClient closeHandler(Handler<Void> closeHandler) {
     this.closeHandler = closeHandler;
     return this;
-  }
-
-  public void close() {
-    // Todo
   }
 
   private void handleError(Throwable t) {

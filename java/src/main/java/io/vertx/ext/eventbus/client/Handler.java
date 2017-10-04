@@ -6,5 +6,4 @@ package io.vertx.ext.eventbus.client;
 public interface Handler<T> {
 
   void handle(T event);
-
 }

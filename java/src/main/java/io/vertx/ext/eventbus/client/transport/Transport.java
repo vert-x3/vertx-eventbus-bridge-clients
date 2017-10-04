@@ -11,11 +11,11 @@ public abstract class Transport extends ChannelInitializer {
 
   protected EventBusClientOptions options;
 
-  protected Handler<Void> connectedHandler;
-  protected Handler<String> messageHandler;
-  protected Handler<Void> closeHandler;
+  Handler<Void> connectedHandler;
+  Handler<String> messageHandler;
+  Handler<Void> closeHandler;
 
-  public Transport(EventBusClientOptions options) {
+  Transport(EventBusClientOptions options) {
     this.options = options;
   }
 

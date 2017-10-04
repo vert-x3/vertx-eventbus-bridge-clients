@@ -1,6 +1,7 @@
 package io.vertx.ext.eventbus.client;
 
 // import io.vertx.ext.eventbus.client.options.ProxyOptions;
+import io.vertx.ext.eventbus.client.options.ProxyOptions;
 import io.vertx.ext.eventbus.client.options.TcpTransportOptions;
 // import io.vertx.ext.eventbus.client.options.TrustOptions;
 import io.vertx.ext.eventbus.client.options.TrustOptions;
@@ -80,12 +81,12 @@ public class EventBusClientOptions {
   private int pingInterval;
   private boolean verifyHost;
   private boolean trustAll;
-  // private ProxyOptions proxyOptions; https://github.com/eclipse/vert.x/blob/master/src/main/java/io/vertx/core/net/ProxyOptions.java
+  private ProxyOptions proxyOptions;
   private TrustOptions trustOptions;
 
-  private boolean autoReconnect;// TODO: develop, apply
-  private int autoReconnectInterval;// TODO: develop, apply
-  private int maxAutoReconnectTries;// TODO: develop, apply
+  private boolean autoReconnect;
+  private int autoReconnectInterval;
+  private int maxAutoReconnectTries;
 
   /**
    * Default constructor
@@ -104,7 +105,7 @@ public class EventBusClientOptions {
     this.pingInterval = DEFAULT_PING_INTERVAL;
     this.verifyHost = DEFAULT_VERIFY_HOST;
     this.trustAll = DEFAULT_TRUST_ALL;
-    // this.proxyOptions = null;
+    this.proxyOptions = null;
     this.trustOptions = null;
 
     this.autoReconnect = DEFAULT_AUTO_RECONNECT;
@@ -314,19 +315,19 @@ public class EventBusClientOptions {
    * @param proxyOptions proxy options object
    * @return a reference to this, so the API can be used fluently
    */
-  // public EventBusClientOptions setProxyOptions(ProxyOptions proxyOptions) {
-  //     this.proxyOptions = proxyOptions;
-  //     return this;
-  // }
+  public EventBusClientOptions setProxyOptions(ProxyOptions proxyOptions) {
+      this.proxyOptions = proxyOptions;
+      return this;
+  }
 
   /**
    * Get proxy options for connections
    *
    * @return proxy options
    */
-  // public ProxyOptions getProxyOptions() {
-  //     return this.proxyOptions;
-  // }
+  public ProxyOptions getProxyOptions() {
+      return this.proxyOptions;
+  }
 
   /**
    * Set trust options for SSL / TLS connections

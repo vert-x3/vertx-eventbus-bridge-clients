@@ -17,15 +17,10 @@ public class MessageConsumer<T> {
     this.address = address;
     this.handler = new MessageHandler<T>() {
       @Override
-      public String address() {
-        return address;
-      }
+      public String address() { return address; };
       @Override
       public void handleMessage(Message<T> msg) {
         handler.handle(msg);
-      }
-      @Override
-      public void handleError(Throwable err) {
       }
     };
   }

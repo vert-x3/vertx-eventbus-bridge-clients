@@ -30,9 +30,9 @@ public class EventBusClientOptions {
   public static final int DEFAULT_CONNECT_TIMEOUT = 60000;
 
   /**
-   * The default value of ping interval = 1000 ms
+   * The default value of ping interval = 5000 ms
    */
-  public static final int DEFAULT_PING_INTERVAL = 1000;
+  public static final int DEFAULT_PING_INTERVAL = 5000;
 
   /**
    * SSL enable by default = false
@@ -211,7 +211,7 @@ public class EventBusClientOptions {
    * Set the idle timeout, in seconds. zero means don't timeout.
    * This determines if a connection will timeout and be closed if no data is received within the timeout.
    *
-   * @param idleTimeout the idle timeout, in seconds
+   * @param idleTimeout the idle timeout, in milliseconds
    * @return a reference to this, so the API can be used fluently
    */
   public EventBusClientOptions setIdleTimeout(int idleTimeout) {
@@ -223,7 +223,7 @@ public class EventBusClientOptions {
   }
 
   /**
-   * @return the idle timeout, in seconds (0 means no timeout)
+   * @return the idle timeout, in milliseconds (0 means no timeout)
    */
   public int getIdleTimeout() {
     return this.idleTimeout;
@@ -292,7 +292,7 @@ public class EventBusClientOptions {
   }
 
   /**
-   * Set whether all server certificates should be trusted
+   * Set whether all server certificates should be trusted (if so, hosts are never verified)
    *
    * @param trustAll true if all should be trusted
    * @return a reference to this, so the API can be used fluently

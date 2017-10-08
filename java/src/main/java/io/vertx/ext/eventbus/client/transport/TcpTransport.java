@@ -1,13 +1,11 @@
 package io.vertx.ext.eventbus.client.transport;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.util.concurrent.Future;
 import io.vertx.ext.eventbus.client.EventBusClientOptions;
-import io.vertx.ext.eventbus.client.transport.Transport;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -18,6 +16,7 @@ import java.util.List;
 public class TcpTransport extends Transport {
 
   private ChannelHandlerContext handlerCtx;
+  private boolean handshakeComplete = false;
   private boolean reading;
   private boolean flush;
 
@@ -26,8 +25,10 @@ public class TcpTransport extends Transport {
   }
 
   @Override
-  protected void initChannel(Channel ch) throws Exception {
-    ch.pipeline().addLast(new ByteToMessageDecoder() {
+  protected void initChannel(Channel channel) throws Exception {
+    super.initChannel(channel);
+
+    channel.pipeline().addLast(new ByteToMessageDecoder() {
       @Override
       public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         reading = true;
@@ -46,7 +47,10 @@ public class TcpTransport extends Transport {
       public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         handlerCtx = ctx;
-        connectedHandler.handle(null);
+        if(!TcpTransport.this.options.isSsl()) {
+          handshakeComplete = true;
+          connectedHandler.handle(null);
+        }
       }
       @Override
       protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -67,9 +71,22 @@ public class TcpTransport extends Transport {
       @Override
       public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         handlerCtx = null;
-        closeHandler.handle(null);
+        if(handshakeComplete) {
+          closeHandler.handle(null);
+        }
       }
     });
+  }
+
+  @Override
+  public void sslHandshakeHandler(Future<Channel> future) {
+    if(!future.isSuccess()) {
+      handleError("An exception occured during TLS handshake with server.", future.cause());
+      return;
+    }
+
+    handshakeComplete = true;
+    connectedHandler.handle(null);
   }
 
   @Override

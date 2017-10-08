@@ -8,6 +8,6 @@ import io.vertx.ext.eventbus.client.json.JacksonCodec;
 public class JacksonBusTest extends WebSocketBusTest {
 
   protected EventBusClient client() {
-    return EventBusClient.websocket(8080, "localhost", new JacksonCodec());
+    return EventBusClient.websocket(new EventBusClientOptions().setPort(7000), new JacksonCodec());
   }
 }

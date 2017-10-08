@@ -1,33 +1,35 @@
 package io.vertx.ext.eventbus.client.options;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.KeyStore;
+
 /**
  * @author <a href="mailto:pl@linux.com">Phil Lehmann</a>
  */
 public abstract class TrustOptions {
 
-  protected final String algorithm;
   protected final String path;
   protected final String password;
 
-  public TrustOptions(String algorithm, String path, String password)
+  public TrustOptions(String path, String password)
   {
-    this.algorithm = algorithm;
     this.path = path;
     this.password = password;
   }
 
-  public String getAlgorithm()
-  {
-    return this.algorithm;
-  }
+  public abstract KeyStore getKeyStore() throws Exception;
 
-  public String getPath()
+  protected KeyStore getSupportedKeyStore(String algorithm) throws Exception
   {
-    return this.path;
-  }
+    KeyStore keyStore = KeyStore.getInstance(algorithm);
 
-  public String getPassword()
-  {
-    return this.password;
+    if(this.password != null) {
+      keyStore.load(new FileInputStream(this.path), this.password.toCharArray());
+    } else {
+      keyStore.load(new FileInputStream(this.path), null);
+    }
+
+    return keyStore;
   }
 }

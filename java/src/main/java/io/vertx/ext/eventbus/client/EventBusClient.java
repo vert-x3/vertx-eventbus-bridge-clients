@@ -5,22 +5,21 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.vertx.ext.eventbus.client.json.GsonCodec;
 import io.vertx.ext.eventbus.client.json.JsonCodec;
+import io.vertx.ext.eventbus.client.logging.Logger;
+import io.vertx.ext.eventbus.client.logging.LoggerFactory;
 import io.vertx.ext.eventbus.client.options.TcpTransportOptions;
 import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
 import io.vertx.ext.eventbus.client.transport.TcpTransport;
 import io.vertx.ext.eventbus.client.transport.Transport;
 import io.vertx.ext.eventbus.client.transport.WebSocketTransport;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.io.InputStream;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -70,6 +69,7 @@ public class EventBusClient {
   private Bootstrap bootstrap;
   private final EventBusClientOptions eventBusClientOptions;
   private final JsonCodec codec;
+  private Logger logger;
 
   private final ConcurrentMap<String, HandlerList> consumerMap = new ConcurrentHashMap<>();
   private ScheduledFuture<?> pingPeriodic;
@@ -78,6 +78,7 @@ public class EventBusClient {
   private ScheduledFuture<?> reconnectFuture;
   private boolean initializedTransport;
   private boolean connected;
+  private boolean closed = false;
   private int reconnectTries;
 
   private Handler<Handler<Void>> connectedHandler;
@@ -89,6 +90,7 @@ public class EventBusClient {
     this.bootstrap = new Bootstrap().group(this.group);
     this.eventBusClientOptions = eventBusClientOptions;
     this.codec = jsonCodec;
+    this.logger = LoggerFactory.getLogger(EventBusClient.class);
   }
 
   private ArrayDeque<Handler<Transport>> pendingTasks = new ArrayDeque<>();
@@ -96,24 +98,32 @@ public class EventBusClient {
   private synchronized void execute(Handler<Transport> task) {
     if (connected) {
       task.handle(transport);
+    } else if(closed) {
+      logger.error("This EventBusClient is closed.");
     } else {
       pendingTasks.add(task);
       if (connectFuture == null && reconnectFuture == null) {
         initializeTransport();
+        logger.info("Connecting for executing task...");
         connectTransport();
       }
     }
   }
 
-  private void initializeTransport() {
+  private synchronized void initializeTransport() {
+
     if(initializedTransport) {
       return;
     }
+    initializedTransport = true;
 
     transport.connectedHandler(new Handler<Void>() {
       @Override
       public void handle(Void v) {
         synchronized (EventBusClient.this) {
+
+          logger.info("Connected to bridge.");
+          // TODO: send only when client was idle for pingInterval?
           pingPeriodic = group.next().scheduleAtFixedRate(new Runnable() {
                                                             @Override
                                                             public void run() {
@@ -125,6 +135,8 @@ public class EventBusClient {
             EventBusClient.this.eventBusClientOptions.getPingInterval(),
             TimeUnit.MILLISECONDS);
           connected = true;
+          // TODO: only reset this to 0 when this was no short lived connection (e.g. < 5 secs)?
+          reconnectTries = 0;
           channel = connectFuture.channel();
           connectFuture = null;
 
@@ -154,50 +166,77 @@ public class EventBusClient {
       @Override
       public void handle(Void event) {
         synchronized (EventBusClient.this) {
+          logger.info("Closed connection to bridge.");
           connected = false;
           channel = null;
           if (closeHandler != null) {
             closeHandler.handle(null);
           }
           pingPeriodic.cancel(false);
-
-          if(EventBusClient.this.eventBusClientOptions.isAutoReconnect() &&
-            (EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries() == 0 ||
-              reconnectTries < EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries()))
-          {
-            reconnectFuture = group.next().schedule(new Runnable() {
-              @Override
-              public void run() {
-                connectTransport();
-                reconnectFuture = null;
-              }
-            }, EventBusClient.this.eventBusClientOptions.getAutoReconnectInterval(), TimeUnit.MILLISECONDS);
-            ++reconnectTries;
-          }
+          autoReconnect();
         }
       }
     });
 
     bootstrap.channel(NioSocketChannel.class);
     bootstrap.handler(transport);
-
-    initializedTransport = true;
   }
 
-  private void connectTransport() {
-    connectFuture = bootstrap.connect(EventBusClient.this.eventBusClientOptions.getHost(), EventBusClient.this.eventBusClientOptions.getPort());
+  private synchronized void connectTransport() {
+
+    if(connected || closed || connectFuture != null || reconnectFuture != null) {
+      return;
+    }
+
+    String host = EventBusClient.this.eventBusClientOptions.getHost();
+    Integer port = EventBusClient.this.eventBusClientOptions.getPort();
+
+    logger.info("Connecting to bridge at " + host + ":" + port + "...");
+    connectFuture = bootstrap.connect(host, port)
+      .addListener(new GenericFutureListener<Future<? super Void>>() {
+      @Override
+      public void operationComplete(Future future) {
+
+        if(!future.isSuccess()) {
+          logger.error("Connecting to bridge failed.", future.cause());
+          connectFuture = null;
+          autoReconnect();
+        }
+      }
+    });
+  }
+
+  private synchronized void autoReconnect() {
+
+    if(!closed &&
+       reconnectFuture == null &&
+       EventBusClient.this.eventBusClientOptions.isAutoReconnect() &&
+      (EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries() == 0 ||
+        reconnectTries < EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries()))
+    {
+      ++reconnectTries;
+      int interval = EventBusClient.this.eventBusClientOptions.getAutoReconnectInterval();
+      logger.info("Auto reconnecting in " + interval + "ms (try number " + reconnectTries + ")...");
+      reconnectFuture = group.next().schedule(new Runnable() {
+        @Override
+        public void run() {
+          logger.info("Auto reconnecting...", reconnectFuture);
+          reconnectFuture = null;
+          connectTransport();
+        }
+      }, interval, TimeUnit.MILLISECONDS);
+    }
   }
 
   private void handlePendingTasks() {
+
+    // First register, then send pending tasks, as those tasks may result in messages being sent to registered channels
+    consumerMap.keySet().forEach(this::sendRegistration);
+
     Handler<Transport> t;
     while ((t = this.pendingTasks.poll()) != null) {
       t.handle(this.transport);
     }
-
-    // TODO: track for each handler whether they actually have been registered since the last successful connection attempt and only reconnect if need be
-    this.consumerMap.forEach((address, handlerList) -> {
-      sendRegistration(address);
-    });
   }
 
   private void handleMsg(Map msg) {
@@ -211,6 +250,7 @@ public class EventBusClient {
             // TCP bridge that replies an error...
             return;
           }
+          logger.info("Received message for address: " + address);
           HandlerList consumers = consumerMap.get(address);
           if (consumers != null) {
             Map body = (Map) msg.get("body");
@@ -246,15 +286,22 @@ public class EventBusClient {
   }
 
   public EventBusClient connect() {
+    closed = false;
     initializeTransport();
+    logger.info("Connecting as requested...");
     connectTransport();
     return this;
+  }
+
+  public boolean isConnected() {
+    return connected;
   }
 
   public void close() {
     if(channel != null) {
       channel.close();
     }
+    closed = true;
   }
 
   /**
@@ -376,7 +423,7 @@ public class EventBusClient {
     return consumer;
   }
 
-  private void register(MessageHandler<?> handler) {
+  void register(MessageHandler<?> handler) {
     String address = handler.address();
     HandlerList result = consumerMap.compute(address, (k, v) -> {
       if (v == null) {
@@ -388,11 +435,19 @@ public class EventBusClient {
       }
     });
     if (result.handlers.size() == 1) {
+
+      // If we would just create a task for it, that would be send upon connection creation redundandly to all other re-registered handlers
+      if(!connected) {
+        initializeTransport();
+        connectTransport();
+        return;
+      }
+
       sendRegistration(address);
     }
   }
 
-  private void sendRegistration(String address)
+  void sendRegistration(String address)
   {
     Map<String, Object> obj = new HashMap<>();
     obj.put("type", "register");
@@ -417,6 +472,7 @@ public class EventBusClient {
       }
     });
     if (result == null) {
+      // Add to queue even if disconnected, as otherwise another queued registration message might be send (and not negated by this message) after connect
       Map<String, Object> obj = new HashMap<>();
       obj.put("type", "unregister");
       obj.put("address", address);
@@ -448,6 +504,7 @@ public class EventBusClient {
    */
   public EventBusClient exceptionHandler(Handler<Throwable> exceptionHandler) {
     this.exceptionHandler = exceptionHandler;
+    this.transport.setExceptionHandler(exceptionHandler);
     return this;
   }
 
@@ -464,6 +521,7 @@ public class EventBusClient {
   }
 
   private void handleError(Throwable t) {
+    this.logger.error("An exception occured.", t);
     Handler<Throwable> handler = this.exceptionHandler;
     if (handler != null) {
       try {
@@ -490,6 +548,7 @@ public class EventBusClient {
     execute(new Handler<Transport>() {
       @Override
       public void handle(Transport event) {
+        logger.info("Sending message: " + msg);
         transport.send(msg);
       }
     });
@@ -499,6 +558,7 @@ public class EventBusClient {
     execute(new Handler<Transport>() {
       @Override
       public void handle(Transport event) {
+        logger.info("Sending message: " + message);
         transport.send(message);
       }
     });

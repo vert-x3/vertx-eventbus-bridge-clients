@@ -7,12 +7,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MessageConsumer<T> {
 
-  private final EventBusClient client;
+  private EventBusClient client;
   private final String address;
   private final MessageHandler<T> handler;
   private final AtomicBoolean registered = new AtomicBoolean(true);
 
-  public MessageConsumer(EventBusClient client, final String address, final Handler<Message<T>> handler) {
+  public MessageConsumer(final EventBusClient client, final String address, final Handler<Message<T>> handler) {
     this.client = client;
     this.address = address;
     this.handler = new MessageHandler<T>() {
@@ -26,16 +26,16 @@ public class MessageConsumer<T> {
   }
 
   MessageHandler handler() {
-    return handler;
+    return this.handler;
   }
 
   public String address() {
-    return address;
+    return this.address;
   }
 
   public void unregister() {
-    if (registered.compareAndSet(true, false)) {
-      client.unregister(handler);
+    if (this.registered.compareAndSet(true, false)) {
+      this.client.unregister(this.handler);
     }
   }
 }

@@ -98,9 +98,7 @@ public class WebSocketTransport extends Transport {
 
   @Override
   public void sslHandshakeHandler(Future<Channel> future) {
-    if(!future.isSuccess()) {
-      handleError("An exception occured during TLS handshake with server.", future.cause());
-    }
+    // NOOP
   }
 
   @Override

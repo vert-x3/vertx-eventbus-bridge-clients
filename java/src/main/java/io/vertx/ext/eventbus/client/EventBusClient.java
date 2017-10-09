@@ -191,14 +191,19 @@ public class EventBusClient {
     String host = EventBusClient.this.eventBusClientOptions.getHost();
     Integer port = EventBusClient.this.eventBusClientOptions.getPort();
 
-    logger.info("Connecting to bridge at " + host + ":" + port + "...");
+    if(EventBusClient.this.eventBusClientOptions.getProxyOptions() != null) {
+      logger.info("Connecting to bridge at " + host + ":" + port + " (via " + EventBusClient.this.eventBusClientOptions.getProxyOptions().toString() + ")...");
+    } else {
+      logger.info("Connecting to bridge at " + host + ":" + port + "...");
+    }
+
     connectFuture = bootstrap.connect(host, port)
       .addListener(new GenericFutureListener<Future<? super Void>>() {
       @Override
       public void operationComplete(Future future) {
 
         if(!future.isSuccess()) {
-          logger.error("Connecting to bridge failed.", future.cause());
+          handleError("Connecting to bridge failed.", future.cause());
           connectFuture = null;
           autoReconnect();
         }
@@ -520,8 +525,8 @@ public class EventBusClient {
     return this;
   }
 
-  private void handleError(Throwable t) {
-    this.logger.error("An exception occured.", t);
+  private void handleError(String message, Throwable t) {
+    this.logger.error(message, t);
     Handler<Throwable> handler = this.exceptionHandler;
     if (handler != null) {
       try {
@@ -577,7 +582,7 @@ public class EventBusClient {
         try {
           handler.handleMessage(message);
         } catch (Throwable t) {
-          handleError(t);
+          handleError("Exception in message handler.", t);
         }
       }
     }
@@ -587,7 +592,7 @@ public class EventBusClient {
         try {
           handler.handleError(cause);
         } catch (Throwable t) {
-          handleError(t);
+          handleError("Exception in message error handler.", t);
         }
       }
     }

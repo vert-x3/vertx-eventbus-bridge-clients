@@ -523,7 +523,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testVerifyHosts(final TestContext ctx) throws Exception
+  public void testVerifyHostsFailure(final TestContext ctx) throws Exception
   {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);

@@ -1,19 +1,47 @@
 package io.vertx.ext.eventbus.client;
 
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.JksOptions;
+import io.vertx.ext.eventbus.client.logging.LoggerFactory;
+import io.vertx.ext.eventbus.client.options.ProxyOptions;
+import io.vertx.ext.eventbus.client.options.ProxyType;
 import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
+import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+import org.junit.*;
+import org.littleshoot.proxy.ActivityTracker;
+import org.littleshoot.proxy.FlowContext;
+import org.littleshoot.proxy.FullFlowContext;
+import org.littleshoot.proxy.HttpProxyServer;
+import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
+
+import javax.net.ssl.SSLSession;
+import java.net.InetSocketAddress;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class WebSocketBusTest extends TcpBusTest {
+
+  static HttpProxyServer proxy;
+
+  @BeforeClass
+  public static void beforeClass(TestContext ctx) {
+    proxy = DefaultHttpProxyServer.bootstrap().withPort(8000).withAllowLocalOnly(true).start();
+  }
+
+  @AfterClass
+  public static void afterClass(TestContext ctx) {
+    proxy.stop();
+  }
 
   @Override
   protected void setUpBridges(TestContext ctx) {
@@ -62,5 +90,50 @@ public class WebSocketBusTest extends TcpBusTest {
                                                                                                                             .setMaxWebsocketFrameSize(1024 * 1024));
     ctx.put("clientOptions", options);
     return EventBusClient.websocket(options);
+  }
+
+  // This test is blocked by netty issue https://github.com/netty/netty/issues/5070
+  /*
+  @Test
+  public void testProxyHttpSsl(final TestContext ctx) {
+    final Async async = ctx.async();
+    setUpProxy();
+    EventBusClient client = client(ctx);
+
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001).setSsl(true).setTrustAll(true).setVerifyHost(false).setAutoReconnect(false)
+                                                   .setProxyOptions(new ProxyOptions(ProxyType.HTTP, "localhost", 8000));
+
+    performHelloWorld(ctx, async, client);
+  }*/
+
+  @Test
+  public void testProxyHttp(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client(ctx);
+
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+      .setProxyOptions(new ProxyOptions(ProxyType.HTTP, "localhost", 8000));
+
+    performHelloWorld(ctx, async, client);
+  }
+
+  @Test
+  public void testProxyHttpFailure(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client(ctx);
+
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+                                                   .setProxyOptions(new ProxyOptions(ProxyType.HTTP, "localhost", 8001));
+
+    client.connectedHandler(event -> {
+      client.close();
+      ctx.fail("Should not connect.");
+    });
+
+    client.exceptionHandler(event -> {
+      async.complete();
+    });
+
+    client.connect();
   }
 }

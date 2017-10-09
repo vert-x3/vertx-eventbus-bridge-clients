@@ -1,6 +1,7 @@
 package io.vertx.ext.eventbus.client.transport;
 
 import io.netty.channel.*;
+import io.netty.handler.proxy.*;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
@@ -14,10 +15,14 @@ import io.vertx.ext.eventbus.client.EventBusClientOptions;
 import io.vertx.ext.eventbus.client.Handler;
 import io.vertx.ext.eventbus.client.logging.Logger;
 import io.vertx.ext.eventbus.client.logging.LoggerFactory;
+import io.vertx.ext.eventbus.client.options.ProxyOptions;
+import io.vertx.ext.eventbus.client.options.ProxyType;
 import io.vertx.ext.eventbus.client.options.TrustOptions;
 
 import javax.net.ssl.*;
 import java.io.FileInputStream;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +51,46 @@ public abstract class Transport extends ChannelInitializer {
     ChannelPipeline pipeline = channel.pipeline();
 
     channel.config().setConnectTimeoutMillis(this.options.getConnectTimeout());
+
+    if(this.options.getProxyOptions() != null) {
+      ProxyOptions proxyOptions = this.options.getProxyOptions();
+
+      String proxyHost = proxyOptions.getHost();
+      int proxyPort = proxyOptions.getPort();
+      String proxyUsername = proxyOptions.getUsername();
+      String proxyPassword = proxyOptions.getPassword();
+      ProxyType proxyType = proxyOptions.getType();
+      SocketAddress proxyAddress = new InetSocketAddress(proxyHost, proxyPort);
+
+      ProxyHandler proxyHandler;
+
+      switch(proxyType) {
+        default:
+        case HTTP:
+          proxyHandler = proxyUsername != null && proxyPassword != null ?
+            new HttpProxyHandler(proxyAddress, proxyUsername, proxyPassword) : new HttpProxyHandler(proxyAddress);
+          break;
+        case SOCKS4:
+          proxyHandler = proxyUsername != null ? new Socks4ProxyHandler(proxyAddress, proxyUsername) : new Socks4ProxyHandler(proxyAddress);
+          break;
+        case SOCKS5:
+          proxyHandler = proxyUsername != null && proxyPassword != null ?
+            new Socks5ProxyHandler(proxyAddress, proxyUsername, proxyPassword) : new Socks5ProxyHandler(proxyAddress);
+          break;
+      }
+
+      pipeline.addLast("proxyHandler", proxyHandler);
+      pipeline.addLast(new ChannelInboundHandlerAdapter() {
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+          if (evt instanceof ProxyConnectionEvent) {
+            pipeline.remove(proxyHandler);
+            pipeline.remove(this);
+          }
+          ctx.fireUserEventTriggered(evt);
+        }
+      });
+    }
 
     if(this.options.isSsl()) {
       TrustManagerFactory trustManagerFactory = null;
@@ -78,15 +123,16 @@ public abstract class Transport extends ChannelInitializer {
       sslHandler.handshakeFuture().addListener(new GenericFutureListener<Future<? super Channel>>() {
           @Override
           public void operationComplete(Future future) {
-            Transport.this.sslHandshakeHandler(future);
+            if(future.isSuccess()) {
+              Transport.this.sslHandshakeHandler(future);
+            }
           }
         });
       pipeline.addLast("sslHandler", sslHandler);
       pipeline.addLast("sslExceptionHandler", new ChannelHandlerAdapter() {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-
-          // NOOP - suppress connection errors, as those are being handled by the handshake listener above
+          handleError("A TLS exception occured.", cause);
         }
       });
     }

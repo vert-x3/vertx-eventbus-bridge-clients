@@ -7,7 +7,7 @@ import java.util.Objects;
  *
  * Blatantly copied from io.vertx.core.net.ProxyOptions @author Alexander Lehmann
  */
-public abstract class ProxyOptions {
+public class ProxyOptions {
 
   /**
    * The default hostname for proxy connect = "localhost"
@@ -26,19 +26,39 @@ public abstract class ProxyOptions {
    */
   public static final ProxyType DEFAULT_TYPE = ProxyType.HTTP;
 
-  private String host; // Todo
-  private int port; // Todo
-  private String username; // Todo
-  private String password; // Todo
-  private ProxyType type; // Todo
+  private String host;
+  private int port;
+  private String username;
+  private String password;
+  private ProxyType type;
 
   /**
    * Default constructor.
    */
   public ProxyOptions() {
-    host = DEFAULT_HOST;
-    port = DEFAULT_PORT;
-    type = DEFAULT_TYPE;
+    this.host = DEFAULT_HOST;
+    this.port = DEFAULT_PORT;
+    this.type = DEFAULT_TYPE;
+  }
+
+  /**
+   * Constructor for unauthenticated proxy access.
+   */
+  public ProxyOptions(ProxyType type, String host, int port) {
+    this.setType(type);
+    this.setHost(host);
+    this.setPort(port);
+  }
+
+  /**
+   * Constructor for authenticated proxy access.
+   */
+  public ProxyOptions(ProxyType type, String host, int port, String username, String password) {
+    this.setType(type);
+    this.setHost(host);
+    this.setPort(port);
+    this.setUsername(username);
+    this.setPassword(password);
   }
 
   /**
@@ -47,7 +67,7 @@ public abstract class ProxyOptions {
    * @return  proxy hosts
    */
   public String getHost() {
-    return host;
+    return this.host;
   }
 
   /**
@@ -68,7 +88,7 @@ public abstract class ProxyOptions {
    * @return  proxy port
    */
   public int getPort() {
-    return port;
+    return this.port;
   }
 
   /**
@@ -91,7 +111,7 @@ public abstract class ProxyOptions {
    * @return  proxy username
    */
   public String getUsername() {
-    return username;
+    return this.username;
   }
 
   /**
@@ -111,7 +131,7 @@ public abstract class ProxyOptions {
    * @return  proxy password
    */
   public String getPassword() {
-    return password;
+    return this.password;
   }
 
   /**
@@ -133,7 +153,7 @@ public abstract class ProxyOptions {
    * @return  proxy type
    */
   public ProxyType getType() {
-    return type;
+    return this.type;
   }
 
   /**
@@ -148,5 +168,10 @@ public abstract class ProxyOptions {
     Objects.requireNonNull(type, "Proxy type may not be null");
     this.type = type;
     return this;
+  }
+
+  @Override
+  public String toString() {
+    return this.type.toString() + " proxy " + this.host + ":" + this.port;
   }
 }

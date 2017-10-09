@@ -80,11 +80,6 @@ public class TcpTransport extends Transport {
 
   @Override
   public void sslHandshakeHandler(Future<Channel> future) {
-    if(!future.isSuccess()) {
-      handleError("An exception occured during TLS handshake with server.", future.cause());
-      return;
-    }
-
     handshakeComplete = true;
     connectedHandler.handle(null);
   }

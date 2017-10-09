@@ -1,12 +1,11 @@
 package io.vertx.ext.eventbus.client;
 
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.JksOptions;
-import io.vertx.ext.eventbus.client.logging.LoggerFactory;
+import io.vertx.ext.eventbus.client.json.GsonCodec;
+import io.vertx.ext.eventbus.client.json.JsonCodec;
 import io.vertx.ext.eventbus.client.options.ProxyOptions;
 import io.vertx.ext.eventbus.client.options.ProxyType;
 import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
@@ -17,29 +16,31 @@ import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import org.junit.*;
-import org.littleshoot.proxy.ActivityTracker;
-import org.littleshoot.proxy.FlowContext;
-import org.littleshoot.proxy.FullFlowContext;
 import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 
-import javax.net.ssl.SSLSession;
-import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class WebSocketBusTest extends TcpBusTest {
 
-  static HttpProxyServer proxy;
+  private static HttpProxyServer proxy;
+  private static int MAX_WEBSOCKET_FRAME_SIZE = 1024 * 1024;
 
   @BeforeClass
-  public static void beforeClass(TestContext ctx) {
+  public static void beforeClass() {
     proxy = DefaultHttpProxyServer.bootstrap().withPort(8000).withAllowLocalOnly(true).start();
   }
 
   @AfterClass
-  public static void afterClass(TestContext ctx) {
+  public static void afterClass() {
     proxy.stop();
   }
 
@@ -52,11 +53,11 @@ public class WebSocketBusTest extends TcpBusTest {
         .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"));
     SockJSHandler ebHandler = SockJSHandler.create(vertx).bridge(opts);
     router.route("/eventbus-test/*").handler(ebHandler);
-    HttpServer server = vertx.createHttpServer()
+    HttpServer server = vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE))
       .requestHandler(router::accept)
       .listen(7000, ctx.asyncAssertSuccess());
 
-    vertx.createHttpServer(new HttpServerOptions().setSsl(true).setKeyStoreOptions(
+    vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setSsl(true).setKeyStoreOptions(
       new JksOptions().setPath("server-keystore.jks").setPassword("wibble")
       ))
       .requestHandler(router::accept)
@@ -87,8 +88,9 @@ public class WebSocketBusTest extends TcpBusTest {
   protected EventBusClient client(TestContext ctx) {
     EventBusClientOptions options = new EventBusClientOptions().setPort(7000)
                                                                .setWebSocketTransportOptions(new WebSocketTransportOptions().setPath("/eventbus-test/websocket")
-                                                                                                                            .setMaxWebsocketFrameSize(1024 * 1024));
+                                                                                                                            .setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE));
     ctx.put("clientOptions", options);
+    ctx.put("codec", new GsonCodec());
     return EventBusClient.websocket(options);
   }
 
@@ -130,10 +132,93 @@ public class WebSocketBusTest extends TcpBusTest {
       ctx.fail("Should not connect.");
     });
 
+    client.exceptionHandler(event -> async.complete());
+
+    client.connect();
+  }
+
+  @Test
+  public void testMaxWebSocketFrameSizeSend(final TestContext ctx) throws Exception {
+
+    final Async async = ctx.async(2);
+    EventBusClient client = client(ctx);
+
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false);
+
+    vertx.eventBus().consumer("server_addr", msg -> {
+      msg.reply(new JsonObject());
+    });
+
+    client.send("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", 128), response -> {
+      ctx.assertTrue(response.succeeded(), "Message within MaxWebSocketFrameSize limit should succeed.");
+      countDownAndCloseClient(async, client);
+    });
+    client.send("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", MAX_WEBSOCKET_FRAME_SIZE - 8), response -> {
+      ctx.assertTrue(response.succeeded(), "Message within MaxWebSocketFrameSize limit should succeed.");
+      countDownAndCloseClient(async, client);
+    });
+  }
+
+  @Test
+  public void testMaxWebSocketFrameSizeSendFail(final TestContext ctx) throws Exception {
+
+    final Async async = ctx.async();
+    EventBusClient client = client(ctx);
+
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false);
+
+    vertx.eventBus().consumer("server_addr", msg -> {
+      msg.reply(new JsonObject());
+    });
+
     client.exceptionHandler(event -> {
+      // Is not being fired, as we don't have any indication of an error
+    });
+
+    client.closeHandler(event -> {
       async.complete();
     });
 
+    client.connectedHandler(event -> {
+
+      client.send("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", MAX_WEBSOCKET_FRAME_SIZE + 16), response -> {
+        // This will come after 30s, when the request times out, as the SockJS server just drops the connection instead of sending a proper error response
+        ctx.assertFalse(response.succeeded(), "Should not be able to send more than MAX_WEBSOCKET_FRAME_SIZE");
+      });
+    });
+
     client.connect();
+  }
+
+  private String getStringForJsonObjectTargetByteSize(TestContext ctx, String address, int numberOfBytes) {
+
+    String replyAddress = UUID.randomUUID().toString();
+    int envelopeLength = ctx.<JsonCodec>get("codec").encode(this.getMessageEnvelope(address, replyAddress, "")).getBytes(StandardCharsets.UTF_8).length;
+
+    String body = getStringWithSize(numberOfBytes - envelopeLength);
+    Map<String, Object> currentCandidate = this.getMessageEnvelope("server_addr", replyAddress, body);
+    int currentCandidateLength = ctx.<JsonCodec>get("codec").encode(currentCandidate).getBytes(StandardCharsets.UTF_8).length;
+
+    ctx.assertEquals(numberOfBytes, currentCandidateLength, "Could not create string with target byte size.");
+
+    return body;
+  }
+
+  private Map<String, Object> getMessageEnvelope(String address, String replyAddress, Object body) {
+
+    Map<String, Object> obj = new HashMap<>();
+    obj.put("type", "send");
+    obj.put("address", address);
+    obj.put("replyAddress", replyAddress);
+    obj.put("body", body);
+    return obj;
+  }
+
+  private String getStringWithSize(int numberOfBytes) {
+    StringBuilder builder = new StringBuilder();
+    for(int i = 0; i < numberOfBytes; ++i) {
+      builder.append("x");
+    }
+    return builder.toString();
   }
 }

@@ -14,7 +14,7 @@ public class LoggerFactory {
   static {
     initialise();
   }
-  public static synchronized void initialise() {
+  private static synchronized void initialise() {
     LoggerFactoryImplBase delegateFactory;
 
     // If a system property is specified then this overrides any delegate factory which is set
@@ -24,7 +24,7 @@ public class LoggerFactory {
     String className = JULLoggerFactory.class.getName();
     try {
       className = System.getProperty(LOGGER_DELEGATE_FACTORY_CLASS_NAME);
-    } catch (Exception e) {
+    } catch (Exception ignored) {
     }
 
     if (className != null) {

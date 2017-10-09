@@ -35,5 +35,4 @@ public class GsonCodecTest {
     Map nested = (Map) o.get("nested");
     assertEquals("another_string_value", nested.get("string"));
   }
-
 }

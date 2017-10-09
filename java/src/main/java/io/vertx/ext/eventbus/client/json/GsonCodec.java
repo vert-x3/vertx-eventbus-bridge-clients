@@ -7,7 +7,7 @@ import com.google.gson.Gson;
  */
 public class GsonCodec extends JsonCodec {
 
-  Gson gson = new Gson();
+  private Gson gson = new Gson();
 
   @Override
   public String encode(Object src) {

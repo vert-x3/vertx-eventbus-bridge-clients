@@ -2,10 +2,8 @@ package io.vertx.ext.eventbus.client.transport;
 
 import io.netty.channel.*;
 import io.netty.handler.proxy.*;
-import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
@@ -20,7 +18,6 @@ import io.vertx.ext.eventbus.client.options.ProxyType;
 import io.vertx.ext.eventbus.client.options.TrustOptions;
 
 import javax.net.ssl.*;
-import java.io.FileInputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.KeyStore;
@@ -46,6 +43,12 @@ public abstract class Transport extends ChannelInitializer {
     this.logger = LoggerFactory.getLogger(Transport.class);
   }
 
+  /**
+   * Adds Proxy, TLS and idle timeout handlers to the channel pipeline.
+   *
+   * @param channel channel to which to add the handlers to
+   * @throws Exception any exception
+   */
   @Override
   protected void initChannel(Channel channel) throws Exception {
     ChannelPipeline pipeline = channel.pipeline();
@@ -71,7 +74,8 @@ public abstract class Transport extends ChannelInitializer {
             new HttpProxyHandler(proxyAddress, proxyUsername, proxyPassword) : new HttpProxyHandler(proxyAddress);
           break;
         case SOCKS4:
-          proxyHandler = proxyUsername != null ? new Socks4ProxyHandler(proxyAddress, proxyUsername) : new Socks4ProxyHandler(proxyAddress);
+          proxyHandler = proxyUsername != null ?
+            new Socks4ProxyHandler(proxyAddress, proxyUsername) : new Socks4ProxyHandler(proxyAddress);
           break;
         case SOCKS5:
           proxyHandler = proxyUsername != null && proxyPassword != null ?
@@ -120,11 +124,11 @@ public abstract class Transport extends ChannelInitializer {
       sslEngine.setSSLParameters(sslParams);
 
       SslHandler sslHandler = new SslHandler(sslEngine, false);
-      sslHandler.handshakeFuture().addListener(new GenericFutureListener<Future<? super Channel>>() {
+      sslHandler.handshakeFuture().addListener(new GenericFutureListener<Future<Channel>>() {
           @Override
-          public void operationComplete(Future future) {
+          public void operationComplete(Future<Channel> future) {
             if(future.isSuccess()) {
-              Transport.this.sslHandshakeHandler(future);
+              Transport.this.sslHandshakeHandler(future.getNow());
             }
           }
         });
@@ -179,6 +183,45 @@ public abstract class Transport extends ChannelInitializer {
     }
   }
 
-  public abstract void sslHandshakeHandler(Future<Channel> future);
+  /**
+   * Transports can use this method to implement error handling for messages sent to the server.
+   * @param handlerCtx the channel context
+   * @param message the message being sent
+   * @param future the channel future created by a {@code write} method
+   */
+  void addSendErrorHandler(ChannelHandlerContext handlerCtx, String message, ChannelFuture future) {
+    future.addListener(new GenericFutureListener<Future<Void>>() {
+      @Override
+      public void operationComplete(Future<Void> future) {
+        // Suppress "Could not send because connection is closed" and SSLExceptions, as they are handled in sslExceptionHandler
+        //noinspection ThrowableResultOfMethodCallIgnored
+        if(!future.isSuccess() && handlerCtx.channel().isOpen() && !(future.cause() instanceof SSLException)) {
+          if(message.length() > EventBusClient.MESSAGE_PRINT_LIMIT) {
+            handleError("Could not send message with " + message.length() + " chars.", future.cause());
+          } else {
+            handleError("Could not send message: " + message, future.cause());
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * This method is being called by {@code Transport} when the TLS handshake has been completed successfully.
+   *
+   * It needs to be overriden by classes inheriting {@code Transport} and can be used to call the connectedHandler,
+   * if there are no more initializing tasks to be done (e.g. WebSocket handshake).
+   *
+   * @param channel the channel for which the TLS handshake has been completed
+   */
+  abstract void sslHandshakeHandler(Channel channel);
+
+  /**
+   * This method needs to be overriden by {@code Transport} implementations.
+   * It is being invoked by {@code EventBusClient} when a message needs to be sent.
+   * Transports can pass {@code ChannelFuture}s created by {@code write} methods to {@code addSendErrorHandler} to
+   * implement error handling for failed messages.
+   * @param message the message to be send
+   */
   public abstract void send(String message);
 }

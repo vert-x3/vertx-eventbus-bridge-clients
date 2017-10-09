@@ -3,7 +3,7 @@ package io.vertx.ext.eventbus.client.logging;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-public class JULLogger implements Logger {
+class JULLogger implements Logger {
   private final java.util.logging.Logger logger;
 
   JULLogger(final String name) {

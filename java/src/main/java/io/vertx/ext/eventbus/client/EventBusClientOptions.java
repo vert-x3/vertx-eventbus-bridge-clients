@@ -1,9 +1,7 @@
 package io.vertx.ext.eventbus.client;
 
-// import io.vertx.ext.eventbus.client.options.ProxyOptions;
 import io.vertx.ext.eventbus.client.options.ProxyOptions;
 import io.vertx.ext.eventbus.client.options.TcpTransportOptions;
-// import io.vertx.ext.eventbus.client.options.TrustOptions;
 import io.vertx.ext.eventbus.client.options.TrustOptions;
 import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
 

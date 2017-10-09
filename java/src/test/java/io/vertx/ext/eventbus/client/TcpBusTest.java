@@ -591,5 +591,4 @@ public class TcpBusTest {
   }
 
   // TODO: add test for EventBusClientOptions.connectTimeout
-  // TODO: add test for EventBusClientOptions.proxyOptions
 }

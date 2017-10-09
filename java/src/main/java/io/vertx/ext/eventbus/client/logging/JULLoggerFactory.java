@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.LogManager;
 
-public class JULLoggerFactory implements LoggerFactoryImplBase {
+class JULLoggerFactory implements LoggerFactoryImplBase {
 
-  public static void loadConfig() {
+  private static void loadConfig() {
     try (InputStream is = JULLoggerFactory.class.getClassLoader().getResourceAsStream("vertx-default-jul-logging.properties")) {
       if (is != null) {
         LogManager.getLogManager().readConfiguration(is);

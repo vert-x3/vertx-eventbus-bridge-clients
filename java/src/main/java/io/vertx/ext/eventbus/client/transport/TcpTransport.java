@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.util.concurrent.Future;
 import io.vertx.ext.eventbus.client.EventBusClientOptions;
 
 import java.nio.charset.StandardCharsets;
@@ -24,6 +23,13 @@ public class TcpTransport extends Transport {
     super(options);
   }
 
+  /**
+   * Registers event handlers on the channel.
+   *
+   * {@inheritDoc}
+   * @param channel channel to which to add the handlers to
+   * @throws Exception any exception
+   */
   @Override
   protected void initChannel(Channel channel) throws Exception {
     super.initChannel(channel);
@@ -79,7 +85,7 @@ public class TcpTransport extends Transport {
   }
 
   @Override
-  public void sslHandshakeHandler(Future<Channel> future) {
+  void sslHandshakeHandler(Channel channel) {
     handshakeComplete = true;
     connectedHandler.handle(null);
   }
@@ -93,9 +99,9 @@ public class TcpTransport extends Transport {
       buff.setInt(0, buff.readableBytes() - 4);
       if (reading) {
         flush = true;
-        handlerCtx.write(buff);
+        addSendErrorHandler(handlerCtx, message, handlerCtx.write(buff));
       } else {
-        handlerCtx.writeAndFlush(buff);
+        addSendErrorHandler(handlerCtx, message, handlerCtx.writeAndFlush(buff));
       }
     } else {
       handlerCtx.executor().execute(new Runnable() {

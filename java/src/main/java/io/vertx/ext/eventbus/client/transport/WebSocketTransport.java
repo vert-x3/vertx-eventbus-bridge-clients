@@ -1,10 +1,7 @@
 package io.vertx.ext.eventbus.client.transport;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
@@ -13,7 +10,6 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
-import io.netty.util.concurrent.Future;
 import io.vertx.ext.eventbus.client.EventBusClientOptions;
 
 import java.net.URI;
@@ -33,6 +29,13 @@ public class WebSocketTransport extends Transport {
     super(options);
   }
 
+  /**
+   * Upgrades the channel to the WebSocket protocol and registers event handlers on the channel.
+   *
+   * {@inheritDoc}
+   * @param channel channel to which to add the handlers to
+   * @throws Exception any exception
+   */
   @Override
   protected void initChannel(Channel channel) throws Exception {
     super.initChannel(channel);
@@ -97,7 +100,7 @@ public class WebSocketTransport extends Transport {
   }
 
   @Override
-  public void sslHandshakeHandler(Future<Channel> future) {
+  void sslHandshakeHandler(Channel channel) {
     // NOOP
   }
 
@@ -109,9 +112,9 @@ public class WebSocketTransport extends Transport {
       BinaryWebSocketFrame frame = new BinaryWebSocketFrame(buff);
       if (reading) {
         flush = true;
-        handlerCtx.write(frame);
+        addSendErrorHandler(handlerCtx, message, handlerCtx.write(frame));
       } else {
-        handlerCtx.writeAndFlush(frame);
+        addSendErrorHandler(handlerCtx, message, handlerCtx.writeAndFlush(frame));
       }
     } else {
       handlerCtx.executor().execute(new Runnable() {

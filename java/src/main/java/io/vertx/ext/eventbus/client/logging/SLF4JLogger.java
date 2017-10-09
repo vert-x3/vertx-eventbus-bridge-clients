@@ -6,7 +6,7 @@ import org.slf4j.spi.LocationAwareLogger;
 
 import static org.slf4j.spi.LocationAwareLogger.*;
 
-public class SLF4JLogger implements io.vertx.ext.eventbus.client.logging.Logger {
+class SLF4JLogger implements io.vertx.ext.eventbus.client.logging.Logger {
 
   private static final String FQCN = io.vertx.ext.eventbus.client.logging.Logger.class.getCanonicalName();
   private final Logger logger;

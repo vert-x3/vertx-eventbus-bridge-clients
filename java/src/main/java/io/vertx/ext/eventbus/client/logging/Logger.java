@@ -1,7 +1,5 @@
 package io.vertx.ext.eventbus.client.logging;
 
-import java.util.logging.Level;
-
 public interface Logger {
   boolean isTraceEnabled();
   boolean isDebugEnabled();

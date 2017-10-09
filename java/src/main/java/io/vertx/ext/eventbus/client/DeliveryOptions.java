@@ -31,8 +31,8 @@ public class DeliveryOptions {
   /**
    * Set the send timeout.
    *
-   * @param timeout  the timeout value, in ms.
-   * @return  a reference to this, so the API can be used fluently
+   * @param timeout the timeout value, in ms.
+   * @return a reference to this, so the API can be used fluently
    */
   public DeliveryOptions setSendTimeout(long timeout) {
     if (timeout < 1) {
@@ -42,6 +42,13 @@ public class DeliveryOptions {
     return this;
   }
 
+  /**
+   * Adds a header to be send with each request.
+   *
+   * @param key the header key.
+   * @param value the header value.
+   * @return a reference to this, so the API can be used fluently
+   */
   public DeliveryOptions addHeader(String key, String value) {
     if (headers == null) {
       headers = new HashMap<>();

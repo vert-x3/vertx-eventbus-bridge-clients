@@ -18,7 +18,6 @@ import io.vertx.ext.eventbus.client.transport.TcpTransport;
 import io.vertx.ext.eventbus.client.transport.Transport;
 import io.vertx.ext.eventbus.client.transport.WebSocketTransport;
 
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,10 +30,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class EventBusClient {
 
+  /**
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge
+   * @param eventBusClientOptions the {@code EventBusClient} options
+   * @return
+   */
   public static EventBusClient tcp(EventBusClientOptions eventBusClientOptions) {
     return EventBusClient.tcp(eventBusClientOptions, new GsonCodec());
   }
 
+  /**
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge
+   * @param eventBusClientOptions the {@code EventBusClient} options
+   * @param jsonCodec the JSON codec to use
+   * @return
+   */
   public static EventBusClient tcp(EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
 
     if (eventBusClientOptions == null) {
@@ -47,10 +57,21 @@ public class EventBusClient {
     return new EventBusClient(new TcpTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
   }
 
+  /**
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus SockJS bridge using WebSockets
+   * @param eventBusClientOptions the {@code EventBusClient} options
+   * @return
+   */
   public static EventBusClient websocket(EventBusClientOptions eventBusClientOptions) {
     return EventBusClient.websocket(eventBusClientOptions, new GsonCodec());
   }
 
+  /**
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus SockJS bridge using WebSockets
+   * @param eventBusClientOptions the {@code EventBusClient} options
+   * @param jsonCodec the JSON codec to use
+   * @return
+   */
   public static EventBusClient websocket(EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
 
     if (eventBusClientOptions == null) {
@@ -62,6 +83,8 @@ public class EventBusClient {
 
     return new EventBusClient(new WebSocketTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
   }
+
+  public static int MESSAGE_PRINT_LIMIT = 10000;
 
   private DeliveryOptions defaultOptions = new DeliveryOptions();
   private final Transport transport;
@@ -85,7 +108,7 @@ public class EventBusClient {
   private volatile Handler<Throwable> exceptionHandler;
   private Handler<Void> closeHandler;
 
-  public EventBusClient(Transport transport, EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
+  private EventBusClient(Transport transport, EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
     this.transport = transport;
     this.bootstrap = new Bootstrap().group(this.group);
     this.eventBusClientOptions = eventBusClientOptions;
@@ -285,11 +308,20 @@ public class EventBusClient {
     }
   }
 
+  /**
+   * Sets the default delivery options (message send timeout and headers) to be used for subsequent messages.
+   * @param defaultOptions the new default delivery options
+   * @return a reference to this, so the API can be used fluently
+   */
   public EventBusClient setDefaultDeliveryOptions(DeliveryOptions defaultOptions) {
     this.defaultOptions = defaultOptions;
     return this;
   }
 
+  /**
+   * Connects to the bridge server
+   * @return a reference to this, so the API can be used fluently
+   */
   public EventBusClient connect() {
     closed = false;
     initializeTransport();
@@ -298,10 +330,20 @@ public class EventBusClient {
     return this;
   }
 
+  /**
+   * Returns whether the client is currently connected to the bridge server.
+   * @return whether the client is currently connected to the bridge server
+   */
   public boolean isConnected() {
     return connected;
   }
 
+  /**
+   * Closes the connection to the bridge server, if it is open.
+   *
+   * Until {@code connect} is invoked, the client will not connect to the server
+   * (neither through auto reconnect, nor by sending a message).
+   */
   public void close() {
     if(channel != null) {
       channel.close();
@@ -428,7 +470,7 @@ public class EventBusClient {
     return consumer;
   }
 
-  void register(MessageHandler<?> handler) {
+  private void register(MessageHandler<?> handler) {
     String address = handler.address();
     HandlerList result = consumerMap.compute(address, (k, v) -> {
       if (v == null) {
@@ -452,7 +494,7 @@ public class EventBusClient {
     }
   }
 
-  void sendRegistration(String address)
+  private void sendRegistration(String address)
   {
     Map<String, Object> obj = new HashMap<>();
     obj.put("type", "register");
@@ -477,7 +519,6 @@ public class EventBusClient {
       }
     });
     if (result == null) {
-      // Add to queue even if disconnected, as otherwise another queued registration message might be send (and not negated by this message) after connect
       Map<String, Object> obj = new HashMap<>();
       obj.put("type", "unregister");
       obj.put("address", address);
@@ -519,7 +560,6 @@ public class EventBusClient {
    * @param closeHandler the close handler
    * @return a reference to this, so the API can be used fluently
    */
-
   public synchronized EventBusClient closeHandler(Handler<Void> closeHandler) {
     this.closeHandler = closeHandler;
     return this;
@@ -550,20 +590,18 @@ public class EventBusClient {
     }
     obj.put("body", body);
     final String msg = codec.encode(obj);
-    execute(new Handler<Transport>() {
-      @Override
-      public void handle(Transport event) {
-        logger.info("Sending message: " + msg);
-        transport.send(msg);
-      }
-    });
+    send(msg);
   }
 
   private void send(final String message) {
     execute(new Handler<Transport>() {
       @Override
       public void handle(Transport event) {
-        logger.info("Sending message: " + message);
+        if(message.length() > MESSAGE_PRINT_LIMIT) {
+          logger.info("Sending message with " + message.length() + " chars.");
+        } else {
+          logger.info("Sending message: " + message);
+        }
         transport.send(message);
       }
     });
@@ -573,7 +611,7 @@ public class EventBusClient {
 
     private final List<MessageHandler> handlers;
 
-    public HandlerList(List<MessageHandler> handlers) {
+    HandlerList(List<MessageHandler> handlers) {
       this.handlers = handlers;
     }
 

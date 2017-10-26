@@ -11,6 +11,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.vertx.ext.eventbus.client.EventBusClientOptions;
+import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -40,12 +41,14 @@ public class WebSocketTransport extends Transport {
   protected void initChannel(Channel channel) throws Exception {
     super.initChannel(channel);
 
+    final WebSocketTransportOptions options = (WebSocketTransportOptions) this.options.getTransportOptions();
+
     StringBuilder url = new StringBuilder();
     url.append("ws");
     if(this.options.isSsl()) {
       url.append("s");
     }
-    url.append("://").append(this.options.getHost()).append(this.options.getWebSocketTransportOptions().getPath());
+    url.append("://").append(this.options.getHost()).append(options.getPath());
 
     WebSocketClientHandshaker handshaker =
       WebSocketClientHandshakerFactory.newHandshaker(new URI(url.toString()),
@@ -53,7 +56,7 @@ public class WebSocketTransport extends Transport {
                                                      null,
                                                      false,
                                                      new DefaultHttpHeaders(),
-                                                     this.options.getWebSocketTransportOptions().getMaxWebsocketFrameSize());
+                                                     options.getMaxWebsocketFrameSize());
     WebSocketClientProtocolHandler handler = new WebSocketClientProtocolHandler(handshaker);
 
     ChannelPipeline pipeline = channel.pipeline();

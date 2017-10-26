@@ -1,4 +1,4 @@
-package io.vertx.ext.eventbus.client.logging;
+package io.vertx.ext.eventbus.client.logging.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

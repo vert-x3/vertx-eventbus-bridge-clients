@@ -1,10 +1,13 @@
-package io.vertx.ext.eventbus.client.logging;
+package io.vertx.ext.eventbus.client.logging.impl;
+
+import io.vertx.ext.eventbus.client.logging.Logger;
+import io.vertx.ext.eventbus.client.logging.LoggerFactoryImplBase;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.LogManager;
 
-class JULLoggerFactory implements LoggerFactoryImplBase {
+public class JULLoggerFactory implements LoggerFactoryImplBase {
 
   private static void loadConfig() {
     try (InputStream is = JULLoggerFactory.class.getClassLoader().getResourceAsStream("vertx-default-jul-logging.properties")) {

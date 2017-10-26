@@ -1,4 +1,6 @@
-package io.vertx.ext.eventbus.client.logging;
+package io.vertx.ext.eventbus.client.logging.impl;
+
+import io.vertx.ext.eventbus.client.logging.Logger;
 
 import java.util.logging.Level;
 import java.util.logging.LogRecord;

@@ -87,8 +87,8 @@ public class WebSocketBusTest extends TcpBusTest {
   @Override
   protected EventBusClient client(TestContext ctx) {
     EventBusClientOptions options = new EventBusClientOptions().setPort(7000)
-                                                               .setWebSocketTransportOptions(new WebSocketTransportOptions().setPath("/eventbus-test/websocket")
-                                                                                                                            .setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE));
+                                                               .setTransportOptions(new WebSocketTransportOptions().setPath("/eventbus-test/websocket")
+                                                                                                                   .setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE));
     ctx.put("clientOptions", options);
     ctx.put("codec", new GsonCodec());
     return EventBusClient.websocket(options);

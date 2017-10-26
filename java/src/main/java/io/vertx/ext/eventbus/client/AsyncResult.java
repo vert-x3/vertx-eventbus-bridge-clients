@@ -13,6 +13,15 @@ public class AsyncResult<T> {
     this.cause = cause;
   }
 
+  public static <Y> AsyncResult<Y> success(Y result) {
+    return new AsyncResult<Y>(result, null);
+  }
+
+  public static <Y> AsyncResult<Y> failure(Throwable cause) {
+    return new AsyncResult<Y>(null, cause);
+  }
+
+
   public boolean failed() {
     return cause != null;
   }

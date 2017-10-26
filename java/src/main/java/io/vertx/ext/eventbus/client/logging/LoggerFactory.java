@@ -1,5 +1,7 @@
 package io.vertx.ext.eventbus.client.logging;
 
+import io.vertx.ext.eventbus.client.logging.impl.JULLoggerFactory;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 

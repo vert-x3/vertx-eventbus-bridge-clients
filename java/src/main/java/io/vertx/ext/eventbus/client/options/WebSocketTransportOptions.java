@@ -5,7 +5,7 @@ package io.vertx.ext.eventbus.client.options;
  *         <p>
  *         Based on io.vertx.core.http.HttpClientOptions @author Tim Fox
  */
-public class WebSocketTransportOptions {
+public class WebSocketTransportOptions implements TransportOptions {
 
   /**
    * The default path to connect the WebSocket client to = /eventbus/websocket

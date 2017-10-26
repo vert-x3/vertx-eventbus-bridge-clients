@@ -50,8 +50,8 @@ public class EventBusClient {
     if (eventBusClientOptions == null) {
       eventBusClientOptions = new EventBusClientOptions();
     }
-    if(eventBusClientOptions.getTcpTransportOptions() == null) {
-      eventBusClientOptions.setTcpTransportOptions(new TcpTransportOptions());
+    if(eventBusClientOptions.getTransportOptions() == null) {
+      eventBusClientOptions.setTransportOptions(new TcpTransportOptions());
     }
 
     return new EventBusClient(new TcpTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
@@ -77,8 +77,8 @@ public class EventBusClient {
     if (eventBusClientOptions == null) {
       eventBusClientOptions = new EventBusClientOptions();
     }
-    if(eventBusClientOptions.getWebSocketTransportOptions() == null) {
-      eventBusClientOptions.setWebSocketTransportOptions(new WebSocketTransportOptions());
+    if(eventBusClientOptions.getTransportOptions() == null) {
+      eventBusClientOptions.setTransportOptions(new WebSocketTransportOptions());
     }
 
     return new EventBusClient(new WebSocketTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);

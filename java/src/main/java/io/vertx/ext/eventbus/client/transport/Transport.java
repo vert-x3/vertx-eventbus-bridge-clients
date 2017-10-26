@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class Transport extends ChannelInitializer {
 
-  protected EventBusClientOptions options;
-  protected Logger logger;
+  protected final EventBusClientOptions options;
+  protected final Logger logger;
 
   Handler<Void> connectedHandler;
   Handler<String> messageHandler;

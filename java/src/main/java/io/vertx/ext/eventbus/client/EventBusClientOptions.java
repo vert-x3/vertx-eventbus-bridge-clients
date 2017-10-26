@@ -1,9 +1,8 @@
 package io.vertx.ext.eventbus.client;
 
 import io.vertx.ext.eventbus.client.options.ProxyOptions;
-import io.vertx.ext.eventbus.client.options.TcpTransportOptions;
+import io.vertx.ext.eventbus.client.options.TransportOptions;
 import io.vertx.ext.eventbus.client.options.TrustOptions;
-import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
 
 /**
  * @author <a href="mailto:pl@linux.com">Phil Lehmann</a>
@@ -67,8 +66,7 @@ public class EventBusClientOptions {
    */
   public static final int DEFAULT_MAX_AUTO_RECONNECT_TRIES = 0;
 
-  private TcpTransportOptions tcpTransportOptions;
-  private WebSocketTransportOptions webSocketTransportOptions;
+  private TransportOptions transportOptions;
 
   private String host;
   private int port;
@@ -112,43 +110,23 @@ public class EventBusClientOptions {
   }
 
   /**
-   * Set the TCP transport options for usage with {@link io.vertx.ext.eventbus.client.transport.TcpTransport}
+   * Set the transport options
    *
-   * @param tcpTransportOptions TCP transport options
+   * @param transportOptions transport options
    * @return a reference to this, so the API can be used fluently
    */
-  public EventBusClientOptions setTcpTransportOptions(TcpTransportOptions tcpTransportOptions) {
-    this.tcpTransportOptions = tcpTransportOptions;
+  public EventBusClientOptions setTransportOptions(TransportOptions transportOptions) {
+    this.transportOptions = transportOptions;
     return this;
   }
 
   /**
-   * Get the TCP transport options for usage with {@link io.vertx.ext.eventbus.client.transport.TcpTransport}
+   * Get the transport options
    *
    * @return TCP transport options
    */
-  public TcpTransportOptions getTcpTransportOptions() {
-    return this.tcpTransportOptions;
-  }
-
-  /**
-   * Set the WebSocket transport options for usage with {@link io.vertx.ext.eventbus.client.transport.WebSocketTransport}
-   *
-   * @param webSocketTransportOptions WebSocket transport options
-   * @return a reference to this, so the API can be used fluently
-   */
-  public EventBusClientOptions setWebSocketTransportOptions(WebSocketTransportOptions webSocketTransportOptions) {
-    this.webSocketTransportOptions = webSocketTransportOptions;
-    return this;
-  }
-
-  /**
-   * Get the WebSocket transport options for usage with {@link io.vertx.ext.eventbus.client.transport.WebSocketTransport}
-   *
-   * @return WebSocket transport options
-   */
-  public WebSocketTransportOptions getWebSocketTransportOptions() {
-    return this.webSocketTransportOptions;
+  public TransportOptions getTransportOptions() {
+    return this.transportOptions;
   }
 
   /**

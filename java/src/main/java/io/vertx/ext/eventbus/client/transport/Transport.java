@@ -51,7 +51,7 @@ public abstract class Transport extends ChannelInitializer {
    */
   @Override
   protected void initChannel(Channel channel) throws Exception {
-    ChannelPipeline pipeline = channel.pipeline();
+    final ChannelPipeline pipeline = channel.pipeline();
 
     channel.config().setConnectTimeoutMillis(this.options.getConnectTimeout());
 
@@ -65,7 +65,7 @@ public abstract class Transport extends ChannelInitializer {
       ProxyType proxyType = proxyOptions.getType();
       SocketAddress proxyAddress = new InetSocketAddress(proxyHost, proxyPort);
 
-      ProxyHandler proxyHandler;
+      final ProxyHandler proxyHandler;
 
       switch(proxyType) {
         default:
@@ -189,7 +189,7 @@ public abstract class Transport extends ChannelInitializer {
    * @param message the message being sent
    * @param future the channel future created by a {@code write} method
    */
-  void addSendErrorHandler(ChannelHandlerContext handlerCtx, String message, ChannelFuture future) {
+  void addSendErrorHandler(final ChannelHandlerContext handlerCtx, final String message, ChannelFuture future) {
     future.addListener(new GenericFutureListener<Future<Void>>() {
       @Override
       public void operationComplete(Future<Void> future) {

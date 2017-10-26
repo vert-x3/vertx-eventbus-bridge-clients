@@ -259,7 +259,10 @@ public class EventBusClient {
   private void handlePendingTasks() {
 
     // First register, then send pending tasks, as those tasks may result in messages being sent to registered channels
-    consumerMap.keySet().forEach(this::sendRegistration);
+    for(String address : consumerMap.keySet()) {
+      logger.info("Registering address: " + address);
+      send("register", address, this.defaultOptions, null);
+    }
 
     Handler<Transport> t;
     while ((t = this.pendingTasks.poll()) != null) {
@@ -406,7 +409,7 @@ public class EventBusClient {
       final AtomicBoolean registered = new AtomicBoolean(true);
       replyAddr = UUID.randomUUID().toString();
 
-      MessageHandler<T> messageHandler = new MessageHandler<T>() {
+      final MessageHandler<T> messageHandler = new MessageHandler<T>() {
         @Override
         public String address() { return replyAddr; };
         @Override
@@ -414,7 +417,7 @@ public class EventBusClient {
           if (registered.compareAndSet(true, false)) {
             this.cancelTimeout();
             unregister(this);
-            replyHandler.handle(new AsyncResult<>(msg, null));
+            replyHandler.handle(AsyncResult.<Message<T>>success(msg));
           }
         }
         @Override
@@ -422,7 +425,7 @@ public class EventBusClient {
           if (registered.compareAndSet(true, false)) {
             this.cancelTimeout();
             unregister(this);
-            replyHandler.handle(new AsyncResult<Message<T>>(null, err));
+            replyHandler.handle(AsyncResult.<Message<T>>failure(err));
           }
         }
       };
@@ -472,25 +475,24 @@ public class EventBusClient {
 
   private void register(MessageHandler<?> handler) {
     String address = handler.address();
-    HandlerList result = consumerMap.compute(address, (k, v) -> {
-      if (v == null) {
-        return new HandlerList(Collections.singletonList(handler));
+    synchronized (consumerMap) {
+      HandlerList consumers = consumerMap.get(address);
+      List<MessageHandler> handlers;
+      if (consumers == null) {
+        handlers = Collections.singletonList((MessageHandler) handler);
+        // If we would just create a task for it, that would be send upon connection creation redundandly to all other re-registered handlers
+        if(!connected) {
+          initializeTransport();
+          connectTransport();
+          return;
+        }
+        sendRegistration(address);
       } else {
-        ArrayList<MessageHandler> l = new ArrayList<>(v.handlers);
-        l.add(handler);
-        return new HandlerList(l);
+        ArrayList<MessageHandler> tmp = new ArrayList<>(consumers.handlers);
+        tmp.add(handler);
+        handlers = new ArrayList<>(tmp);
       }
-    });
-    if (result.handlers.size() == 1) {
-
-      // If we would just create a task for it, that would be send upon connection creation redundandly to all other re-registered handlers
-      if(!connected) {
-        initializeTransport();
-        connectTransport();
-        return;
-      }
-
-      sendRegistration(address);
+      consumerMap.put(address, new HandlerList(handlers));
     }
   }
 
@@ -505,25 +507,26 @@ public class EventBusClient {
 
   void unregister(MessageHandler<?> handler) {
     String address = handler.address();
-    HandlerList result = consumerMap.compute(address, (k, v) -> {
-      if (v.handlers.size() == 1) {
-        if (v.handlers.get(0) == handler) {
-          return null;
-        } else {
-          return v;
-        }
-      } else {
-        ArrayList<MessageHandler> list = new ArrayList<>(v.handlers);
-        list.remove(handler);
-        return new HandlerList(list);
+    synchronized (consumerMap) {
+      HandlerList consumers = consumerMap.get(address);
+      if (consumers == null) {
+        return;
       }
-    });
-    if (result == null) {
-      Map<String, Object> obj = new HashMap<>();
-      obj.put("type", "unregister");
-      obj.put("address", address);
-      final String msg = codec.encode(obj);
-      send(msg);
+      if (!consumers.handlers.contains(handler)) {
+        return;
+      }
+      List<MessageHandler> handlers = new ArrayList<>(consumers.handlers);
+      handlers.remove(handler);
+      if (handlers.isEmpty()) {
+        consumerMap.remove(address);
+        Map<String, Object> obj = new HashMap<>();
+        obj.put("type", "unregister");
+        obj.put("address", address);
+        final String msg = codec.encode(obj);
+        send(msg);
+      } else {
+        consumerMap.put(address, new HandlerList(new ArrayList<>(handlers)));
+      }
     }
   }
 

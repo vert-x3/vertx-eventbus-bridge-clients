@@ -103,7 +103,7 @@ public class WebSocketTransport extends Transport {
   }
 
   @Override
-  void sslHandshakeHandler(Channel channel) {
+  void handshakeCompleteHandler(Channel channel) {
     // NOOP
   }
 

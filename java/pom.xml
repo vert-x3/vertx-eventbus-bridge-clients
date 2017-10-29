@@ -35,6 +35,17 @@
 
   <name>Vert.x Event Bus Client</name>
 
+  <repositories>
+    <repository>
+      <id>central</id>
+      <url>http://repo1.maven.org/maven2</url>
+    </repository>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>io.netty</groupId>
@@ -105,10 +116,18 @@
       <version>2.9.0</version>
       <optional>true</optional>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
       <version>3.5.0</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>-->
+    <dependency>
+      <groupId>com.github.philrykoff</groupId>
+      <artifactId>vert.x</artifactId>
+      <version>49fcd0cd02800a678ae3852213d0e21687fdedb7</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>

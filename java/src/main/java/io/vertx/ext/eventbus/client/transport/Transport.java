@@ -55,6 +55,16 @@ public abstract class Transport extends ChannelInitializer {
 
     channel.config().setConnectTimeoutMillis(this.options.getConnectTimeout());
 
+    if(this.options.getProxyOptions() == null && !this.options.isSsl()) {
+      pipeline.addLast(new ChannelInboundHandlerAdapter() {
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+          super.channelActive(ctx);
+          Transport.this.handshakeCompleteHandler(channel);
+        }
+      });
+    }
+
     if(this.options.getProxyOptions() != null) {
       ProxyOptions proxyOptions = this.options.getProxyOptions();
 
@@ -90,8 +100,17 @@ public abstract class Transport extends ChannelInitializer {
           if (evt instanceof ProxyConnectionEvent) {
             pipeline.remove(proxyHandler);
             pipeline.remove(this);
+            if(!Transport.this.options.isSsl()) {
+              Transport.this.handshakeCompleteHandler(channel);
+            }
           }
           ctx.fireUserEventTriggered(evt);
+        }
+      });
+      pipeline.addLast("proxyExceptionHandler", new ChannelHandlerAdapter() {
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+          handleError("A proxy exception occured.", cause);
         }
       });
     }
@@ -128,7 +147,7 @@ public abstract class Transport extends ChannelInitializer {
           @Override
           public void operationComplete(Future<Channel> future) {
             if(future.isSuccess()) {
-              Transport.this.sslHandshakeHandler(future.getNow());
+              Transport.this.handshakeCompleteHandler(future.getNow());
             }
           }
         });
@@ -207,14 +226,14 @@ public abstract class Transport extends ChannelInitializer {
   }
 
   /**
-   * This method is being called by {@code Transport} when the TLS handshake has been completed successfully.
+   * This method is being called by {@code Transport} when the proxy & TLS handshake has been completed successfully.
    *
    * It needs to be overriden by classes inheriting {@code Transport} and can be used to call the connectedHandler,
    * if there are no more initializing tasks to be done (e.g. WebSocket handshake).
    *
    * @param channel the channel for which the TLS handshake has been completed
    */
-  abstract void sslHandshakeHandler(Channel channel);
+  abstract void handshakeCompleteHandler(Channel channel);
 
   /**
    * This method needs to be overriden by {@code Transport} implementations.

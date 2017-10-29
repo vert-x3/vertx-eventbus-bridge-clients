@@ -4,6 +4,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.JksOptions;
+import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.eventbus.client.json.GsonCodec;
 import io.vertx.ext.eventbus.client.json.JsonCodec;
 import io.vertx.ext.eventbus.client.options.ProxyOptions;
@@ -13,35 +14,35 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
-import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import org.junit.*;
 import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class WebSocketBusTest extends TcpBusTest {
 
-  private static HttpProxyServer proxy;
+  private static HttpProxyServer httpProxy;
   private static int MAX_WEBSOCKET_FRAME_SIZE = 1024 * 1024;
 
   @BeforeClass
-  public static void beforeClass() {
-    proxy = DefaultHttpProxyServer.bootstrap().withPort(8000).withAllowLocalOnly(true).start();
+  public static void beforeClass() throws UnknownHostException {
+    TcpBusTest.beforeClass();
+    httpProxy = DefaultHttpProxyServer.bootstrap().withPort(8000).withAllowLocalOnly(true).start();
   }
 
   @AfterClass
   public static void afterClass() {
-    proxy.stop();
+    TcpBusTest.afterClass();
+    httpProxy.stop();
   }
 
   @Override
@@ -53,11 +54,11 @@ public class WebSocketBusTest extends TcpBusTest {
         .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"));
     SockJSHandler ebHandler = SockJSHandler.create(vertx).bridge(opts);
     router.route("/eventbus-test/*").handler(ebHandler);
-    HttpServer server = vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE))
+    HttpServer server = vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebsocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE))
       .requestHandler(router::accept)
       .listen(7000, ctx.asyncAssertSuccess());
 
-    vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setSsl(true).setKeyStoreOptions(
+    vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebsocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE).setSsl(true).setKeyStoreOptions(
       new JksOptions().setPath("server-keystore.jks").setPassword("wibble")
       ))
       .requestHandler(router::accept)
@@ -125,20 +126,13 @@ public class WebSocketBusTest extends TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-                                                   .setProxyOptions(new ProxyOptions(ProxyType.HTTP, "localhost", 8001));
+                                             .setProxyOptions(new ProxyOptions(ProxyType.HTTP, "localhost", 8100));
 
-    client.connectedHandler(event -> {
-      client.close();
-      ctx.fail("Should not connect.");
-    });
-
-    client.exceptionHandler(event -> async.complete());
-
-    client.connect();
+    performHelloWorldFailure(ctx, async, client);
   }
 
   @Test
-  public void testMaxWebSocketFrameSizeSend(final TestContext ctx) throws Exception {
+  public void testMaxWebSocketFrameSend(final TestContext ctx) throws Exception {
 
     final Async async = ctx.async(2);
     EventBusClient client = client(ctx);
@@ -181,7 +175,7 @@ public class WebSocketBusTest extends TcpBusTest {
 
     client.connectedHandler(event -> {
 
-      client.send("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", MAX_WEBSOCKET_FRAME_SIZE + 16), response -> {
+      client.send("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", MAX_WEBSOCKET_FRAME_SIZE + 8), response -> {
         // This will come after 30s, when the request times out, as the SockJS server just drops the connection instead of sending a proper error response
         ctx.assertFalse(response.succeeded(), "Should not be able to send more than MAX_WEBSOCKET_FRAME_SIZE");
       });

@@ -8,6 +8,7 @@ import io.vertx.ext.eventbus.client.EventBusClientOptions;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -15,7 +16,9 @@ import java.util.List;
 public class TcpTransport extends Transport {
 
   private ChannelHandlerContext handlerCtx;
-  private boolean handshakeComplete = false;
+  private boolean baseHandshakeComplete = false;
+  private boolean tcpHandshakeComplete = false;
+  private AtomicBoolean connectedHandlerInvoked = new AtomicBoolean(false);
   private boolean reading;
   private boolean flush;
 
@@ -33,6 +36,10 @@ public class TcpTransport extends Transport {
   @Override
   protected void initChannel(Channel channel) throws Exception {
     super.initChannel(channel);
+
+    baseHandshakeComplete = false;
+    tcpHandshakeComplete = false;
+    connectedHandlerInvoked.set(false);
 
     channel.pipeline().addLast(new ByteToMessageDecoder() {
       @Override
@@ -53,8 +60,8 @@ public class TcpTransport extends Transport {
       public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         handlerCtx = ctx;
-        if(!TcpTransport.this.options.isSsl()) {
-          handshakeComplete = true;
+        tcpHandshakeComplete = true;
+        if(baseHandshakeComplete && !connectedHandlerInvoked.getAndSet(true)) {
           connectedHandler.handle(null);
         }
       }
@@ -77,7 +84,7 @@ public class TcpTransport extends Transport {
       @Override
       public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         handlerCtx = null;
-        if(handshakeComplete) {
+        if(connectedHandlerInvoked.get()) {
           closeHandler.handle(null);
         }
       }
@@ -85,9 +92,11 @@ public class TcpTransport extends Transport {
   }
 
   @Override
-  void sslHandshakeHandler(Channel channel) {
-    handshakeComplete = true;
-    connectedHandler.handle(null);
+  void handshakeCompleteHandler(Channel channel) {
+    baseHandshakeComplete = true;
+    if(tcpHandshakeComplete && !connectedHandlerInvoked.getAndSet(true)) {
+      connectedHandler.handle(null);
+    }
   }
 
   @Override

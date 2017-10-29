@@ -35,7 +35,7 @@ public class MessageConsumer<T> {
 
   public void unregister() {
     if (this.registered.compareAndSet(true, false)) {
-      this.client.unregister(this.handler);
+      this.client.unregister(this.handler, true);
     }
   }
 }

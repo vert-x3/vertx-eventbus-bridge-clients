@@ -9,17 +9,15 @@ import io.vertx.core.net.NetServerOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.eventbus.bridge.tcp.TcpEventBusBridge;
-import io.vertx.ext.eventbus.client.options.JksTrustOptions;
-import io.vertx.ext.eventbus.client.options.PemTrustOptions;
-import io.vertx.ext.eventbus.client.options.PfxTrustOptions;
+import io.vertx.ext.eventbus.client.options.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import io.vertx.test.core.SocksProxy;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,7 +29,19 @@ import java.util.concurrent.atomic.AtomicReference;
 @RunWith(VertxUnitRunner.class)
 public class TcpBusTest {
 
+  private static SocksProxy socksProxy;
   Vertx vertx;
+
+  @BeforeClass
+  public static void beforeClass() throws UnknownHostException {
+    socksProxy = new SocksProxy("vertx-user");
+    socksProxy.start(Vertx.vertx(), v -> {});
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    socksProxy.stop();
+  }
 
   @Before
   public void before(TestContext ctx) {
@@ -438,7 +448,7 @@ public class TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setIdleTimeout(100)
-                                                   .setAutoReconnectInterval(0);
+                               .setAutoReconnectInterval(0);
 
     client.connectedHandler(event -> {
       countDownAndCloseClient(async, client);
@@ -446,7 +456,7 @@ public class TcpBusTest {
 
     client.connect();
 
-    async.awaitSuccess(1000);
+    async.awaitSuccess(3000);
   }
 
   @Test
@@ -562,6 +572,56 @@ public class TcpBusTest {
     client.close();
   }
 
+  @Test
+  public void testProxySocks5(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client(ctx);
+
+    // VertX SocksProxy only supports connecting to hostnames, not IPv4/6
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+      .setProxyOptions(new ProxyOptions(ProxyType.SOCKS5, "localhost", 11080).setUsername("vertx-user").setPassword("vertx-user"));
+
+    performHelloWorld(ctx, async, client);
+  }
+
+  @Test
+  public void testProxySocks5SslTrustAll(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client(ctx);
+
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001).setSsl(true).setTrustAll(true).setAutoReconnect(false)
+      .setProxyOptions(new ProxyOptions(ProxyType.SOCKS5, "localhost", 11080).setUsername("vertx-user").setPassword("vertx-user"));
+
+    performHelloWorld(ctx, async, client);
+  }
+
+  @Test
+  public void testProxySocks5UserFailure(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client(ctx);
+
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+      .setProxyOptions(new ProxyOptions(ProxyType.SOCKS5, "localhost", 11080).setUsername("vertx-user2").setPassword("vertx-user"));
+
+    client.connectedHandler(event -> ctx.fail("Should not connect."));
+    client.exceptionHandler(event -> {
+      async.complete();
+      client.close();
+    });
+    client.connect();
+  }
+
+  @Test
+  public void testProxySocks5Failure(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client(ctx);
+
+    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+      .setProxyOptions(new ProxyOptions(ProxyType.SOCKS5, "localhost", 11081).setUsername("vertx-user").setPassword("vertx-user"));
+
+    performHelloWorldFailure(ctx, async, client);
+  }
+
   protected synchronized void countDownAndCloseClient(Async async, EventBusClient client) {
     if(async.count() == 1) {
       client.close();
@@ -574,12 +634,22 @@ public class TcpBusTest {
     vertx.eventBus().consumer("server_addr", msg -> {
       msg.reply(new JsonObject().put("message", "hello world"));
     });
+    client.exceptionHandler(event -> ctx.fail(new Exception("Should not end in exception.", event)));
     client.<Map>send("server_addr", Collections.emptyMap(), reply -> {
       ctx.assertTrue(reply.succeeded());
       ctx.assertEquals("hello world", reply.result().body().get("message"));
       client.close();
       async.complete();
     });
+  }
+
+  protected void performHelloWorldFailure(final TestContext ctx, final Async async, final EventBusClient client) {
+    client.connectedHandler(event -> {
+      client.close();
+      ctx.fail("Should not connect.");
+    });
+    client.exceptionHandler(event -> async.complete());
+    client.connect();
   }
 
   protected void sleep(final TestContext ctx, int duration, String error) {

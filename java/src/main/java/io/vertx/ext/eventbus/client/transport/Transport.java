@@ -50,7 +50,7 @@ public abstract class Transport extends ChannelInitializer {
    * @throws Exception any exception
    */
   @Override
-  protected void initChannel(Channel channel) throws Exception {
+  protected void initChannel(final Channel channel) throws Exception {
     final ChannelPipeline pipeline = channel.pipeline();
 
     channel.config().setConnectTimeoutMillis(this.options.getConnectTimeout());

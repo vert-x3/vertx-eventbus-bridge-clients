@@ -1,5 +1,7 @@
-package io.vertx.ext.eventbus.client;
+package io.vertx.ext.eventbus.client.test;
 
+import io.vertx.ext.eventbus.client.EventBusClient;
+import io.vertx.ext.eventbus.client.EventBusClientOptions;
 import io.vertx.ext.eventbus.client.json.JacksonCodec;
 import io.vertx.ext.unit.TestContext;
 import org.junit.AfterClass;

@@ -1,10 +1,14 @@
-package io.vertx.ext.eventbus.client;
+package io.vertx.ext.eventbus.client.test;
 
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.JksOptions;
 import io.vertx.ext.bridge.PermittedOptions;
+import io.vertx.ext.eventbus.client.EventBusClient;
+import io.vertx.ext.eventbus.client.EventBusClientOptions;
+import io.vertx.ext.eventbus.client.Handler;
+import io.vertx.ext.eventbus.client.ProxyType;
 import io.vertx.ext.eventbus.client.json.GsonCodec;
 import io.vertx.ext.eventbus.client.json.JsonCodec;
 import io.vertx.ext.unit.Async;

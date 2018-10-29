@@ -1,4 +1,4 @@
-package io.vertx.ext.eventbus.client;
+package io.vertx.ext.eventbus.client.test;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.eventbus.client.json.GsonCodec;

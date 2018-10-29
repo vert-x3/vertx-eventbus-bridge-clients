@@ -1,4 +1,4 @@
-package io.vertx.ext.eventbus.client;
+package io.vertx.ext.eventbus.client.test;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.ReplyException;
@@ -9,6 +9,7 @@ import io.vertx.core.net.NetServerOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.eventbus.bridge.tcp.TcpEventBusBridge;
+import io.vertx.ext.eventbus.client.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;

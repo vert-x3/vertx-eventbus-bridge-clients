@@ -8,16 +8,16 @@ public class AsyncResult<T> {
   private final T result;
   private final Throwable cause;
 
-  public AsyncResult(T result, Throwable cause) {
+  private AsyncResult(T result, Throwable cause) {
     this.result = result;
     this.cause = cause;
   }
 
-  public static <Y> AsyncResult<Y> success(Y result) {
+  static <Y> AsyncResult<Y> success(Y result) {
     return new AsyncResult<Y>(result, null);
   }
 
-  public static <Y> AsyncResult<Y> failure(Throwable cause) {
+  static <Y> AsyncResult<Y> failure(Throwable cause) {
     return new AsyncResult<Y>(null, cause);
   }
 

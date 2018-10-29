@@ -480,7 +480,7 @@ public class EventBusClient {
    */
   public <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler) {
     MessageConsumer<T> consumer = new MessageConsumer<>(this, address, handler);
-    register(consumer.handler(), this.defaultOptions == null ? null : this.defaultOptions.getHeaders(), true);
+    register(consumer.handler, this.defaultOptions == null ? null : this.defaultOptions.getHeaders(), true);
     return consumer;
   }
 

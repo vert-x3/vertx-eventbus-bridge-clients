@@ -16,7 +16,7 @@ abstract class MessageHandler<T> {
   public void handleError(Throwable err) {
   }
 
-  public void setTimeout(ScheduledFuture<?> timeout) {
+  void setTimeout(ScheduledFuture<?> timeout) {
     this.timeout = timeout;
   }
 

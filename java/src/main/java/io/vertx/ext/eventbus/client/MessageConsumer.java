@@ -8,11 +8,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MessageConsumer<T> {
 
   private EventBusClient client;
-  private final String address;
-  private final MessageHandler<T> handler;
+  final String address;
+  final MessageHandler<T> handler;
   private final AtomicBoolean registered = new AtomicBoolean(true);
 
-  public MessageConsumer(final EventBusClient client, final String address, final Handler<Message<T>> handler) {
+  MessageConsumer(final EventBusClient client, final String address, final Handler<Message<T>> handler) {
     this.client = client;
     this.address = address;
     this.handler = new MessageHandler<T>() {
@@ -23,14 +23,6 @@ public class MessageConsumer<T> {
         handler.handle(msg);
       }
     };
-  }
-
-  MessageHandler handler() {
-    return this.handler;
-  }
-
-  public String address() {
-    return this.address;
   }
 
   public void unregister() {

@@ -1,4 +1,4 @@
-package io.vertx.ext.eventbus.client.options;
+package io.vertx.ext.eventbus.client;
 
 /**
  * @author <a href="mailto:pl@linux.com">Phil Lehmann</a>

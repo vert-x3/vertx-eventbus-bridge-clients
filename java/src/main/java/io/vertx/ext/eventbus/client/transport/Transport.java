@@ -2,6 +2,8 @@ package io.vertx.ext.eventbus.client.transport;
 
 import io.netty.channel.*;
 import io.netty.handler.proxy.*;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -11,17 +13,16 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.vertx.ext.eventbus.client.EventBusClient;
 import io.vertx.ext.eventbus.client.EventBusClientOptions;
 import io.vertx.ext.eventbus.client.Handler;
+import io.vertx.ext.eventbus.client.ProxyType;
 import io.vertx.ext.eventbus.client.logging.Logger;
 import io.vertx.ext.eventbus.client.logging.LoggerFactory;
-import io.vertx.ext.eventbus.client.options.ProxyOptions;
-import io.vertx.ext.eventbus.client.options.ProxyType;
-import io.vertx.ext.eventbus.client.options.TrustOptions;
 
 import javax.net.ssl.*;
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.KeyStore;
-import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -55,7 +56,7 @@ public abstract class Transport extends ChannelInitializer {
 
     channel.config().setConnectTimeoutMillis(this.options.getConnectTimeout());
 
-    if(this.options.getProxyOptions() == null && !this.options.isSsl()) {
+    if(this.options.getProxyHost() == null && !this.options.isSsl()) {
       pipeline.addLast(new ChannelInboundHandlerAdapter() {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -65,14 +66,13 @@ public abstract class Transport extends ChannelInitializer {
       });
     }
 
-    if(this.options.getProxyOptions() != null) {
-      ProxyOptions proxyOptions = this.options.getProxyOptions();
+    if(this.options.getProxyHost() != null) {
 
-      String proxyHost = proxyOptions.getHost();
-      int proxyPort = proxyOptions.getPort();
-      String proxyUsername = proxyOptions.getUsername();
-      String proxyPassword = proxyOptions.getPassword();
-      ProxyType proxyType = proxyOptions.getType();
+      String proxyHost = options.getProxyHost();
+      int proxyPort = options.getProxyPort();
+      String proxyUsername = options.getProxyUsername();
+      String proxyPassword = options.getProxyPassword();
+      ProxyType proxyType = options.getProxyType();
       SocketAddress proxyAddress = new InetSocketAddress(proxyHost, proxyPort);
 
       final ProxyHandler proxyHandler;
@@ -115,30 +115,42 @@ public abstract class Transport extends ChannelInitializer {
       });
     }
 
+    SslContextBuilder builder = SslContextBuilder.forClient();
+
     if(this.options.isSsl()) {
-      TrustManagerFactory trustManagerFactory = null;
       SSLParameters sslParams = new SSLParameters();
 
       if(this.options.isTrustAll()) {
-        trustManagerFactory = InsecureTrustManagerFactory.INSTANCE;
-      }
-      else if(this.options.getTrustOptions() != null) {
-        TrustOptions trustOptions = this.options.getTrustOptions();
-
-        KeyStore keyStore = trustOptions.getKeyStore();
-
-        trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keyStore);
-
-        if(this.options.isVerifyHost())
-        {
+        builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
+      } else if(this.options.getStorePath() != null) {
+        if ("pem".equals(this.options.getStoreType())) {
+          builder.trustManager(new File(this.options.getStorePath()));
+        } else {
+          KeyStore keyStore;
+          if ("jks".equals(this.options.getStoreType())) {
+            keyStore = KeyStore.getInstance("jks");
+          } else {
+            keyStore = KeyStore.getInstance("pkcs12");
+          }
+          if(this.options.getStorePassword() != null) {
+            keyStore.load(new FileInputStream(this.options.getStorePath()), this.options.getStorePassword().toCharArray());
+          } else {
+            keyStore.load(new FileInputStream(this.options.getStorePath()), null);
+          }
+          TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+          trustManagerFactory.init(keyStore);
+          builder.trustManager(trustManagerFactory);
+        }
+        if(this.options.isVerifyHost()) {
           sslParams.setEndpointIdentificationAlgorithm("HTTPS");
         }
       }
 
-      SSLContext clientContext = SSLContext.getInstance("TLS");
-      clientContext.init(null, trustManagerFactory == null ? null : trustManagerFactory.getTrustManagers(), new SecureRandom());
-      SSLEngine sslEngine = clientContext.createSSLEngine(this.options.getHost(), this.options.getPort());
+      SslContext sctx = builder.build();
+
+      // SSLContext clientContext = SSLContext.getInstance("TLS");
+      // clientContext.init(null, trustManagerFactory == null ? null : trustManagerFactory.getTrustManagers(), new SecureRandom());
+      SSLEngine sslEngine = sctx.newEngine(channel.alloc(), this.options.getHost(), this.options.getPort());
       sslEngine.setUseClientMode(true);
       sslEngine.setSSLParameters(sslParams);
 

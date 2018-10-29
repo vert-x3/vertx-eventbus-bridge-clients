@@ -12,8 +12,6 @@ import io.vertx.ext.eventbus.client.json.GsonCodec;
 import io.vertx.ext.eventbus.client.json.JsonCodec;
 import io.vertx.ext.eventbus.client.logging.Logger;
 import io.vertx.ext.eventbus.client.logging.LoggerFactory;
-import io.vertx.ext.eventbus.client.options.TcpTransportOptions;
-import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
 import io.vertx.ext.eventbus.client.transport.TcpTransport;
 import io.vertx.ext.eventbus.client.transport.Transport;
 import io.vertx.ext.eventbus.client.transport.WebSocketTransport;
@@ -50,9 +48,6 @@ public class EventBusClient {
     if (eventBusClientOptions == null) {
       eventBusClientOptions = new EventBusClientOptions();
     }
-    if(eventBusClientOptions.getTransportOptions() == null) {
-      eventBusClientOptions.setTransportOptions(new TcpTransportOptions());
-    }
 
     return new EventBusClient(new TcpTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
   }
@@ -76,9 +71,6 @@ public class EventBusClient {
 
     if (eventBusClientOptions == null) {
       eventBusClientOptions = new EventBusClientOptions();
-    }
-    if(eventBusClientOptions.getTransportOptions() == null) {
-      eventBusClientOptions.setTransportOptions(new WebSocketTransportOptions());
     }
 
     return new EventBusClient(new WebSocketTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
@@ -213,8 +205,8 @@ public class EventBusClient {
     String host = EventBusClient.this.eventBusClientOptions.getHost();
     Integer port = EventBusClient.this.eventBusClientOptions.getPort();
 
-    if(EventBusClient.this.eventBusClientOptions.getProxyOptions() != null) {
-      logger.info("Connecting to bridge at " + host + ":" + port + " (via " + EventBusClient.this.eventBusClientOptions.getProxyOptions().toString() + ") using " + this.transport.getClass().getSimpleName() + "...");
+    if(EventBusClient.this.eventBusClientOptions.getProxyHost() != null) {
+      logger.info("Connecting to bridge at " + host + ":" + port + " (via " + EventBusClient.this.eventBusClientOptions.getProxyHost() + ") using " + this.transport.getClass().getSimpleName() + "...");
     } else {
       logger.info("Connecting to bridge at " + host + ":" + port + " using " + this.transport.getClass().getSimpleName() + "...");
     }

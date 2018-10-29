@@ -9,7 +9,6 @@ import io.vertx.core.net.NetServerOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.eventbus.bridge.tcp.TcpEventBusBridge;
-import io.vertx.ext.eventbus.client.options.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -499,9 +498,9 @@ public class TcpBusTest {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
-      .setSsl(true).setAutoReconnect(false)
-      .setTrustOptions(new JksTrustOptions("server-keystore.jks", "wibble"));
+    EventBusClientOptions options = ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
+      .setSsl(true).setAutoReconnect(false);
+    options.setStorePath("server-keystore.jks").setStorePassword("wibble");
 
     performHelloWorld(ctx, async, client);
   }
@@ -512,9 +511,9 @@ public class TcpBusTest {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
-      .setSsl(true).setAutoReconnect(false)
-      .setTrustOptions(new PemTrustOptions("server-keystore-nopass.pem"));
+    EventBusClientOptions options = ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
+      .setSsl(true).setAutoReconnect(false);
+    options.setStoreType("pem").setStorePath("server-keystore-nopass.pem");
 
     performHelloWorld(ctx, async, client);
   }
@@ -525,9 +524,9 @@ public class TcpBusTest {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
-      .setSsl(true).setAutoReconnect(false)
-      .setTrustOptions(new PfxTrustOptions("server-keystore.pfx", "wibble"));
+    EventBusClientOptions options = ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
+      .setSsl(true).setAutoReconnect(false);
+    options.setStorePath("server-keystore.pfx").setStorePassword("wibble").setStoreType("pfx");
 
     performHelloWorld(ctx, async, client);
   }
@@ -538,9 +537,9 @@ public class TcpBusTest {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setHost("127.0.0.1").setPort(7001)
-      .setSsl(true).setAutoReconnect(false)
-      .setTrustOptions(new PfxTrustOptions("server-keystore.pfx", "wibble"));
+    EventBusClientOptions options = ctx.<EventBusClientOptions>get("clientOptions").setHost("127.0.0.1").setPort(7001)
+      .setSsl(true).setAutoReconnect(false);
+    options.setStorePath("server-keystore.pfx").setStorePassword("wibble").setStoreType("pfx");
 
     client.connectedHandler(event -> {
       client.close();
@@ -579,7 +578,11 @@ public class TcpBusTest {
 
     // VertX SocksProxy only supports connecting to hostnames, not IPv4/6
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-      .setProxyOptions(new ProxyOptions(ProxyType.SOCKS5, "localhost", 11080).setUsername("vertx-user").setPassword("vertx-user"));
+        .setProxyType(ProxyType.SOCKS5)
+        .setProxyHost("localhost")
+        .setProxyPort(11080)
+        .setProxyUsername("vertx-user")
+        .setProxyPassword("vertx-user");
 
     performHelloWorld(ctx, async, client);
   }
@@ -590,7 +593,11 @@ public class TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7001).setSsl(true).setTrustAll(true).setAutoReconnect(false)
-      .setProxyOptions(new ProxyOptions(ProxyType.SOCKS5, "localhost", 11080).setUsername("vertx-user").setPassword("vertx-user"));
+        .setProxyType(ProxyType.SOCKS5)
+        .setProxyHost("localhost")
+        .setProxyPort(11080)
+        .setProxyUsername("vertx-user")
+        .setProxyPassword("vertx-user");
 
     performHelloWorld(ctx, async, client);
   }
@@ -601,7 +608,11 @@ public class TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-      .setProxyOptions(new ProxyOptions(ProxyType.SOCKS5, "localhost", 11080).setUsername("vertx-user2").setPassword("vertx-user"));
+        .setProxyType(ProxyType.SOCKS5)
+        .setProxyHost("localhost")
+        .setProxyPort(11080)
+        .setProxyUsername("vertx-user2")
+        .setProxyPassword("vertx-user");
 
     client.connectedHandler(event -> ctx.fail("Should not connect."));
     client.exceptionHandler(event -> {
@@ -617,7 +628,11 @@ public class TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-      .setProxyOptions(new ProxyOptions(ProxyType.SOCKS5, "localhost", 11081).setUsername("vertx-user").setPassword("vertx-user"));
+        .setProxyType(ProxyType.SOCKS5)
+        .setProxyHost("localhost")
+        .setProxyPort(11081)
+        .setProxyUsername("vertx-user")
+        .setProxyPassword("vertx-user");
 
     performHelloWorldFailure(ctx, async, client);
   }

@@ -7,9 +7,6 @@ import io.vertx.core.net.JksOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.eventbus.client.json.GsonCodec;
 import io.vertx.ext.eventbus.client.json.JsonCodec;
-import io.vertx.ext.eventbus.client.options.ProxyOptions;
-import io.vertx.ext.eventbus.client.options.ProxyType;
-import io.vertx.ext.eventbus.client.options.WebSocketTransportOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.Router;
@@ -87,9 +84,8 @@ public class WebSocketBusTest extends TcpBusTest {
 
   @Override
   protected EventBusClient client(TestContext ctx) {
-    EventBusClientOptions options = new EventBusClientOptions().setPort(7000)
-                                                               .setTransportOptions(new WebSocketTransportOptions().setPath("/eventbus-test/websocket")
-                                                                                                                   .setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE));
+    EventBusClientOptions options = new EventBusClientOptions().setPort(7000).setWebsocketPath("/eventbus-test/websocket")
+                                                                                                                   .setWebsocketMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE);
     ctx.put("clientOptions", options);
     ctx.put("codec", new GsonCodec());
     return EventBusClient.websocket(options);
@@ -115,7 +111,7 @@ public class WebSocketBusTest extends TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-      .setProxyOptions(new ProxyOptions(ProxyType.HTTP, "localhost", 8000));
+      .setProxyType(ProxyType.HTTP).setProxyHost("localhost").setProxyPort(8000);
 
     performHelloWorld(ctx, async, client);
   }
@@ -126,7 +122,7 @@ public class WebSocketBusTest extends TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-                                             .setProxyOptions(new ProxyOptions(ProxyType.HTTP, "localhost", 8100));
+                                             .setProxyType(ProxyType.HTTP).setProxyHost("localhost").setProxyPort(8100);
 
     performHelloWorldFailure(ctx, async, client);
   }

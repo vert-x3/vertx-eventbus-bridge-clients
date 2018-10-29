@@ -1,8 +1,6 @@
 package io.vertx.ext.eventbus.client;
 
-import io.vertx.ext.eventbus.client.options.ProxyOptions;
-import io.vertx.ext.eventbus.client.options.TransportOptions;
-import io.vertx.ext.eventbus.client.options.TrustOptions;
+import java.util.Objects;
 
 /**
  * @author <a href="mailto:pl@linux.com">Phil Lehmann</a>
@@ -66,23 +64,42 @@ public class EventBusClientOptions {
    */
   public static final int DEFAULT_MAX_AUTO_RECONNECT_TRIES = 0;
 
-  private TransportOptions transportOptions;
+  /**
+   * The default storePath to connect the WebSocket client to = /eventbus/websocket
+   */
+  public static final String DEFAULT_WEBSOCKET_PATH = "/eventbus/websocket";
+
+  /**
+   * The default value for maximum websocket frame size = 65536 bytes
+   */
+  public static final int DEFAULT_MAX_WEBSOCKET_FRAME_SIZE = 65536;
 
   private String host;
   private int port;
 
   private boolean ssl;
-  private int idleTimeout;
-  private int connectTimeout;
-  private int pingInterval;
+  private String storePath;
+  private String storePassword;
+  private String storeType = "jks";
   private boolean verifyHost;
   private boolean trustAll;
-  private ProxyOptions proxyOptions;
-  private TrustOptions trustOptions;
 
+  private int idleTimeout;
+  private int pingInterval;
+
+  private int connectTimeout;
   private boolean autoReconnect;
   private int autoReconnectInterval;
   private int maxAutoReconnectTries;
+
+  private String proxyHost;
+  private int proxyPort;
+  private String proxyUsername;
+  private String proxyPassword;
+  private ProxyType proxyType;
+
+  private String websocketPath;
+  private int websocketMaxWebsocketFrameSize;
 
   /**
    * Default constructor
@@ -94,39 +111,17 @@ public class EventBusClientOptions {
   private void init() {
     this.host = DEFAULT_HOST;
     this.port = DEFAULT_PORT;
-
     this.ssl = DEFAULT_SSL;
     this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
     this.connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     this.pingInterval = DEFAULT_PING_INTERVAL;
     this.verifyHost = DEFAULT_VERIFY_HOST;
     this.trustAll = DEFAULT_TRUST_ALL;
-    this.proxyOptions = null;
-    this.trustOptions = null;
-
     this.autoReconnect = DEFAULT_AUTO_RECONNECT;
     this.autoReconnectInterval = DEFAULT_AUTO_RECONNECT_INTERVAL;
     this.maxAutoReconnectTries = DEFAULT_MAX_AUTO_RECONNECT_TRIES;
-  }
-
-  /**
-   * Set the transport options
-   *
-   * @param transportOptions transport options
-   * @return a reference to this, so the API can be used fluently
-   */
-  public EventBusClientOptions setTransportOptions(TransportOptions transportOptions) {
-    this.transportOptions = transportOptions;
-    return this;
-  }
-
-  /**
-   * Get the transport options
-   *
-   * @return TCP transport options
-   */
-  public TransportOptions getTransportOptions() {
-    return this.transportOptions;
+    this.websocketPath = EventBusClientOptions.DEFAULT_WEBSOCKET_PATH;
+    this.websocketMaxWebsocketFrameSize = EventBusClientOptions.DEFAULT_MAX_WEBSOCKET_FRAME_SIZE;
   }
 
   /**
@@ -286,46 +281,6 @@ public class EventBusClientOptions {
   }
 
   /**
-   * Set proxy options for connections via CONNECT proxy (e.g. Squid) or a SOCKS proxy.
-   *
-   * @param proxyOptions proxy options object
-   * @return a reference to this, so the API can be used fluently
-   */
-  public EventBusClientOptions setProxyOptions(ProxyOptions proxyOptions) {
-      this.proxyOptions = proxyOptions;
-      return this;
-  }
-
-  /**
-   * Get proxy options for connections
-   *
-   * @return proxy options
-   */
-  public ProxyOptions getProxyOptions() {
-      return this.proxyOptions;
-  }
-
-  /**
-   * Set trust options for SSL / TLS connections
-   *
-   * @param trustOptions trust options object
-   * @return a reference to this, so the API can be used fluently
-   */
-  public EventBusClientOptions setTrustOptions(TrustOptions trustOptions) {
-      this.trustOptions = trustOptions;
-      return this;
-  }
-
-  /**
-   * Get trust options for SSL / TLS connections
-   *
-   * @return trust options
-   */
-  public TrustOptions getTrustOptions() {
-      return this.trustOptions;
-  }
-
-  /**
    * Are auto reconnects enabled, even if the client does not try to send a message?
    *
    * @return if auto reconnects are enabled
@@ -382,6 +337,182 @@ public class EventBusClientOptions {
    */
   public EventBusClientOptions setMaxAutoReconnectTries(int maxAutoReconnectTries) {
     this.maxAutoReconnectTries = maxAutoReconnectTries;
+    return this;
+  }
+
+  public String getStorePath() {
+    return storePath;
+  }
+
+  public EventBusClientOptions setStorePath(String storePath) {
+    this.storePath = storePath;
+    return this;
+  }
+
+  public String getStorePassword() {
+    return storePassword;
+  }
+
+  public EventBusClientOptions setStorePassword(String storePassword) {
+    this.storePassword = storePassword;
+    return this;
+  }
+
+  public String getStoreType() {
+    return storeType;
+  }
+
+  public EventBusClientOptions setStoreType(String storeType) {
+    this.storeType = storeType;
+    return this;
+  }
+
+  /**
+   * Set the storePath to connect the WebSocket client to
+   *
+   * @param websocketPath the storePath
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClientOptions setWebsocketPath(String websocketPath) {
+    this.websocketPath = websocketPath;
+    return this;
+  }
+
+  /**
+   * Get the storePath to connect the WebSocket client to
+   *
+   * @return the storePath
+   */
+  public String getWebsocketPath() {
+    return this.websocketPath;
+  }
+
+  /**
+   * Get the maximum websocket framesize to use
+   *
+   * @return the max websocket framesize
+   */
+  public int getWebsocketMaxWebsocketFrameSize() {
+    return this.websocketMaxWebsocketFrameSize;
+  }
+
+  /**
+   * Set the max websocket frame size
+   *
+   * @param websocketMaxWebsocketFrameSize the max frame size, in bytes
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClientOptions setWebsocketMaxWebsocketFrameSize(int websocketMaxWebsocketFrameSize) {
+    this.websocketMaxWebsocketFrameSize = websocketMaxWebsocketFrameSize;
+    return this;
+  }
+
+  /**
+   * Get proxy host.
+   *
+   * @return  proxy hosts
+   */
+  public String getProxyHost() {
+    return this.proxyHost;
+  }
+
+  /**
+   * Set proxy host.
+   *
+   * @param proxyHost the proxy host to connect to
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClientOptions setProxyHost(String proxyHost) {
+    Objects.requireNonNull(proxyHost, "Proxy host may not be null");
+    this.proxyHost = proxyHost;
+    return this;
+  }
+
+  /**
+   * Get proxy port.
+   *
+   * @return  proxy port
+   */
+  public int getProxyPort() {
+    return this.proxyPort;
+  }
+
+  /**
+   * Set proxy port.
+   *
+   * @param proxyPort the proxy port to connect to
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClientOptions setProxyPort(int proxyPort) {
+    if (proxyPort < 0 || proxyPort > 65535) {
+      throw new IllegalArgumentException("Invalid proxy port " + proxyPort);
+    }
+    this.proxyPort = proxyPort;
+    return this;
+  }
+
+  /**
+   * Get proxy username.
+   *
+   * @return  proxy proxyUsername
+   */
+  public String getProxyUsername() {
+    return this.proxyUsername;
+  }
+
+  /**
+   * Set proxy username.
+   *
+   * @param username the proxy proxyUsername
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClientOptions setProxyUsername(String username) {
+    this.proxyUsername = username;
+    return this;
+  }
+
+  /**
+   * Get proxy storePassword.
+   *
+   * @return  proxy storePassword
+   */
+  public String getProxyPassword() {
+    return this.proxyPassword;
+  }
+
+  /**
+   * Set proxy password.
+   *
+   * @param password the proxy storePassword
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClientOptions setProxyPassword(String password) {
+    this.proxyPassword = password;
+    return this;
+  }
+
+  /**
+   * Get proxy type.
+   *
+   *<p>type can be HTTP, SOCKS4 and SOCKS5
+   *
+   * @return  proxy type
+   */
+  public ProxyType getProxyType() {
+    return this.proxyType;
+  }
+
+  /**
+   * Set proxy type.
+   *
+   * <p>ProxyType can be HTTP, SOCKS4 and SOCKS5
+   *
+   * @param proxyType the proxy type to connect to
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClientOptions setProxyType(ProxyType proxyType) {
+    Objects.requireNonNull(proxyType, "Proxy proxyType may not be null");
+    this.proxyType = proxyType;
     return this;
   }
 }

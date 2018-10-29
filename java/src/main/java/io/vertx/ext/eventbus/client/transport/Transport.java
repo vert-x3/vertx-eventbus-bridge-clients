@@ -10,12 +10,12 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.vertx.ext.eventbus.client.EventBusClient;
 import io.vertx.ext.eventbus.client.EventBusClientOptions;
 import io.vertx.ext.eventbus.client.Handler;
 import io.vertx.ext.eventbus.client.ProxyType;
-import io.vertx.ext.eventbus.client.logging.Logger;
-import io.vertx.ext.eventbus.client.logging.LoggerFactory;
 
 import javax.net.ssl.*;
 import java.io.File;
@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class Transport extends ChannelInitializer {
 
   protected final EventBusClientOptions options;
-  protected final Logger logger;
+  protected final InternalLogger logger;
 
   Handler<Void> connectedHandler;
   Handler<String> messageHandler;
@@ -41,7 +41,7 @@ public abstract class Transport extends ChannelInitializer {
 
   Transport(EventBusClientOptions options) {
     this.options = options;
-    this.logger = LoggerFactory.getLogger(Transport.class);
+    this.logger = InternalLoggerFactory.getInstance(Transport.class);
   }
 
   /**

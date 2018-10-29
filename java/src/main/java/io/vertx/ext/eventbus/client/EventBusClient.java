@@ -8,10 +8,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.vertx.ext.eventbus.client.json.GsonCodec;
 import io.vertx.ext.eventbus.client.json.JsonCodec;
-import io.vertx.ext.eventbus.client.logging.Logger;
-import io.vertx.ext.eventbus.client.logging.LoggerFactory;
 import io.vertx.ext.eventbus.client.transport.TcpTransport;
 import io.vertx.ext.eventbus.client.transport.Transport;
 import io.vertx.ext.eventbus.client.transport.WebSocketTransport;
@@ -84,7 +84,7 @@ public class EventBusClient {
   private Bootstrap bootstrap;
   private final EventBusClientOptions eventBusClientOptions;
   private final JsonCodec codec;
-  private Logger logger;
+  private InternalLogger logger;
 
   private final ConcurrentMap<String, HandlerList> consumerMap = new ConcurrentHashMap<>();
   private ScheduledFuture<?> pingPeriodic;
@@ -105,7 +105,7 @@ public class EventBusClient {
     this.bootstrap = new Bootstrap().group(this.group);
     this.eventBusClientOptions = eventBusClientOptions;
     this.codec = jsonCodec;
-    this.logger = LoggerFactory.getLogger(EventBusClient.class);
+    this.logger = InternalLoggerFactory.getInstance(EventBusClient.class);
   }
 
   private ArrayDeque<Handler<Transport>> pendingTasks = new ArrayDeque<>();

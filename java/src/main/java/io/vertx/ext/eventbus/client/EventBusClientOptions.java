@@ -1,5 +1,6 @@
 package io.vertx.ext.eventbus.client;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -78,9 +79,9 @@ public class EventBusClientOptions {
   private int port;
 
   private boolean ssl;
-  private String storePath;
-  private String storePassword;
-  private String storeType = "jks";
+  private String trustStorePath;
+  private String trustStorePassword;
+  private String trustStoreType = "jks";
   private boolean verifyHost;
   private boolean trustAll;
 
@@ -127,9 +128,9 @@ public class EventBusClientOptions {
     this.host = options.host;
     this.port = options.port;
     this.ssl = options.ssl;
-    this.storePath = options.storePath;
-    this.storePassword = options.storePassword;
-    this.storeType = options.storeType;
+    this.trustStorePath = options.trustStorePath;
+    this.trustStorePassword = options.trustStorePassword;
+    this.trustStoreType = options.trustStoreType;
     this.verifyHost = options.verifyHost;
     this.trustAll = options.trustAll;
     this.idleTimeout = options.idleTimeout;
@@ -363,35 +364,38 @@ public class EventBusClientOptions {
     return this;
   }
 
-  public String getStorePath() {
-    return storePath;
+  public String getTrustStorePath() {
+    return trustStorePath;
   }
 
-  public EventBusClientOptions setStorePath(String storePath) {
-    this.storePath = storePath;
+  public EventBusClientOptions setTrustStorePath(String trustStorePath) {
+    this.trustStorePath = trustStorePath;
     return this;
   }
 
-  public String getStorePassword() {
-    return storePassword;
+  public String getTrustStorePassword() {
+    return trustStorePassword;
   }
 
-  public EventBusClientOptions setStorePassword(String storePassword) {
-    this.storePassword = storePassword;
+  public EventBusClientOptions setTrustStorePassword(String trustStorePassword) {
+    this.trustStorePassword = trustStorePassword;
     return this;
   }
 
-  public String getStoreType() {
-    return storeType;
+  public String getTrustStoreType() {
+    return trustStoreType;
   }
 
-  public EventBusClientOptions setStoreType(String storeType) {
-    this.storeType = storeType;
+  public EventBusClientOptions setTrustStoreType(String trustStoreType) {
+    if (!Arrays.asList("jks", "pfx", "pem", null).contains(trustStoreType)) {
+      throw new IllegalArgumentException("Invalid trust store type it must be one of jks (Java), pfx (PKCS12) or pem (PKCS8)");
+    }
+    this.trustStoreType = trustStoreType;
     return this;
   }
 
   /**
-   * Set the storePath to connect the WebSocket client to
+   * Set the path to connect the WebSocket client to
    *
    * @param websocketPath the storePath
    * @return a reference to this, so the API can be used fluently
@@ -402,7 +406,7 @@ public class EventBusClientOptions {
   }
 
   /**
-   * Get the storePath to connect the WebSocket client to
+   * Get the path to connect the WebSocket client to
    *
    * @return the storePath
    */

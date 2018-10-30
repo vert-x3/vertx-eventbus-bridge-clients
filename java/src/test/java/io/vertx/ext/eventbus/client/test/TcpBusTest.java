@@ -509,8 +509,8 @@ public class TcpBusTest {
       .setPort(7001)
       .setSsl(true)
       .setAutoReconnect(false)
-      .setStorePath("server-keystore.jks")
-      .setStorePassword("wibble");
+      .setTrustStorePath("server-keystore.jks")
+      .setTrustStorePassword("wibble");
 
     EventBusClient client = client(ctx);
 
@@ -526,8 +526,8 @@ public class TcpBusTest {
       .setPort(7001)
       .setSsl(true)
       .setAutoReconnect(false)
-      .setStoreType("pem")
-      .setStorePath("server-keystore-nopass.pem");
+      .setTrustStoreType("pem")
+      .setTrustStorePath("server-keystore-nopass.pem");
 
     performHelloWorld(ctx, async, client);
   }
@@ -540,9 +540,9 @@ public class TcpBusTest {
       .setPort(7001)
       .setSsl(true)
       .setAutoReconnect(false)
-      .setStorePath("server-keystore.pfx")
-      .setStorePassword("wibble")
-      .setStoreType("pfx");
+      .setTrustStorePath("server-keystore.pfx")
+      .setTrustStorePassword("wibble")
+      .setTrustStoreType("pfx");
 
     EventBusClient client = client(ctx);
 
@@ -558,9 +558,9 @@ public class TcpBusTest {
       .setPort(7001)
       .setSsl(true)
       .setAutoReconnect(false)
-      .setStorePath("server-keystore.pfx")
-      .setStorePassword("wibble")
-      .setStoreType("pfx");
+      .setTrustStorePath("server-keystore.pfx")
+      .setTrustStorePassword("wibble")
+      .setTrustStoreType("pfx");
 
     EventBusClient client = client(ctx);
 

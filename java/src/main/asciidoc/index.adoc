@@ -1,18 +1,24 @@
 === Test
 
-todo
+==== Send
 
 ```
 {@link examples.ClientExamples#example01}
 ```
 
+==== Request/reply
+
 ```
 {@link examples.ClientExamples#example02}
 ```
 
+==== Publish
+
 ```
 {@link examples.ClientExamples#example03}
 ```
+
+==== Consuming
 
 ```
 {@link examples.ClientExamples#example04}

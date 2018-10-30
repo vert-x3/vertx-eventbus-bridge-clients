@@ -56,9 +56,9 @@ public abstract class Transport extends ChannelInitializer {
     SslContextBuilder builder = SslContextBuilder.forClient();
     if (options.isTrustAll()) {
       builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
-    } else if (options.getStorePath() != null) {
+    } else if (options.getTrustStorePath() != null) {
 
-      String storePath = options.getStorePath();
+      String storePath = options.getTrustStorePath();
       InputStream storeIS = null;
       if (storePath != null) {
         File f = new File(storePath);
@@ -72,17 +72,17 @@ public abstract class Transport extends ChannelInitializer {
       if (storeIS == null) {
         throw new IllegalArgumentException("Store file not found:" + storePath);
       }
-      if ("pem".equals(options.getStoreType())) {
+      if ("pem".equals(options.getTrustStoreType())) {
         builder.trustManager(storeIS);
       } else {
         KeyStore keyStore;
-        if ("jks".equals(options.getStoreType())) {
+        if ("jks".equals(options.getTrustStoreType())) {
           keyStore = KeyStore.getInstance("jks");
         } else {
           keyStore = KeyStore.getInstance("pkcs12");
         }
-        if (options.getStorePassword() != null) {
-          keyStore.load(storeIS, options.getStorePassword().toCharArray());
+        if (options.getTrustStorePassword() != null) {
+          keyStore.load(storeIS, options.getTrustStorePassword().toCharArray());
         } else {
           keyStore.load(storeIS, null);
         }

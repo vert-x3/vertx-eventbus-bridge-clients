@@ -31,8 +31,9 @@ public class WebSocketTransport extends Transport {
 
   /**
    * Upgrades the channel to the WebSocket protocol and registers event handlers on the channel.
-   *
+   * <p>
    * {@inheritDoc}
+   *
    * @param channel channel to which to add the handlers to
    * @throws Exception any exception
    */
@@ -42,18 +43,18 @@ public class WebSocketTransport extends Transport {
 
     StringBuilder url = new StringBuilder();
     url.append("ws");
-    if(this.options.isSsl()) {
+    if (this.options.isSsl()) {
       url.append("s");
     }
     url.append("://").append(this.options.getHost()).append(options.getWebsocketPath());
 
     WebSocketClientHandshaker handshaker =
       WebSocketClientHandshakerFactory.newHandshaker(new URI(url.toString()),
-                                                     WebSocketVersion.V13,
-                                                     null,
-                                                     false,
-                                                     new DefaultHttpHeaders(),
-                                                     options.getWebsocketMaxWebsocketFrameSize());
+        WebSocketVersion.V13,
+        null,
+        false,
+        new DefaultHttpHeaders(),
+        options.getWebsocketMaxWebsocketFrameSize());
     WebSocketClientProtocolHandler handler = new WebSocketClientProtocolHandler(handshaker);
 
     ChannelPipeline pipeline = channel.pipeline();
@@ -69,6 +70,7 @@ public class WebSocketTransport extends Transport {
           connectedHandler.handle(null);
         }
       }
+
       @Override
       public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         reading = true;
@@ -80,6 +82,7 @@ public class WebSocketTransport extends Transport {
           System.out.println("Unhandled " + msg);
         }
       }
+
       @Override
       public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         super.channelReadComplete(ctx);
@@ -89,10 +92,11 @@ public class WebSocketTransport extends Transport {
           ctx.flush();
         }
       }
+
       @Override
       public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         handlerCtx = null;
-        if(handshakeComplete) {
+        if (handshakeComplete) {
           closeHandler.handle(null);
         }
       }

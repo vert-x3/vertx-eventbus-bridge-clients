@@ -4,8 +4,8 @@ import java.util.Objects;
 
 /**
  * @author <a href="mailto:pl@linux.com">Phil Lehmann</a>
- *         <p>
- *         Based on io.vertx.core.net.ClientOptionsBase and others by @author Tim Fox
+ * <p>
+ * Based on io.vertx.core.net.ClientOptionsBase and others by @author Tim Fox
  */
 public class EventBusClientOptions {
 
@@ -410,7 +410,7 @@ public class EventBusClientOptions {
   /**
    * Get proxy host.
    *
-   * @return  proxy hosts
+   * @return proxy hosts
    */
   public String getProxyHost() {
     return this.proxyHost;
@@ -431,7 +431,7 @@ public class EventBusClientOptions {
   /**
    * Get proxy port.
    *
-   * @return  proxy port
+   * @return proxy port
    */
   public int getProxyPort() {
     return this.proxyPort;
@@ -454,7 +454,7 @@ public class EventBusClientOptions {
   /**
    * Get proxy username.
    *
-   * @return  proxy proxyUsername
+   * @return proxy proxyUsername
    */
   public String getProxyUsername() {
     return this.proxyUsername;
@@ -474,7 +474,7 @@ public class EventBusClientOptions {
   /**
    * Get proxy storePassword.
    *
-   * @return  proxy storePassword
+   * @return proxy storePassword
    */
   public String getProxyPassword() {
     return this.proxyPassword;
@@ -494,9 +494,9 @@ public class EventBusClientOptions {
   /**
    * Get proxy type.
    *
-   *<p>type can be HTTP, SOCKS4 and SOCKS5
+   * <p>type can be HTTP, SOCKS4 and SOCKS5
    *
-   * @return  proxy type
+   * @return proxy type
    */
   public ProxyType getProxyType() {
     return this.proxyType;

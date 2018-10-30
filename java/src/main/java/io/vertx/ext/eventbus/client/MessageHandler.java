@@ -21,7 +21,7 @@ abstract class MessageHandler<T> {
   }
 
   void cancelTimeout() {
-    if(this.timeout != null && !this.timeout.isCancelled()) {
+    if (this.timeout != null && !this.timeout.isCancelled()) {
       this.timeout.cancel(false);
     }
   }

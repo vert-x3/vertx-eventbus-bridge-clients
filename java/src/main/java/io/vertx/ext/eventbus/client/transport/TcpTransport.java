@@ -28,8 +28,9 @@ public class TcpTransport extends Transport {
 
   /**
    * Registers event handlers on the channel.
-   *
+   * <p>
    * {@inheritDoc}
+   *
    * @param channel channel to which to add the handlers to
    * @throws Exception any exception
    */
@@ -47,6 +48,7 @@ public class TcpTransport extends Transport {
         reading = true;
         super.channelRead(ctx, msg);
       }
+
       @Override
       public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         super.channelReadComplete(ctx);
@@ -56,15 +58,17 @@ public class TcpTransport extends Transport {
           ctx.flush();
         }
       }
+
       @Override
       public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         handlerCtx = ctx;
         tcpHandshakeComplete = true;
-        if(baseHandshakeComplete && !connectedHandlerInvoked.getAndSet(true)) {
+        if (baseHandshakeComplete && !connectedHandlerInvoked.getAndSet(true)) {
           connectedHandler.handle(null);
         }
       }
+
       @Override
       protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         while (true) {
@@ -81,10 +85,11 @@ public class TcpTransport extends Transport {
           messageHandler.handle(json);
         }
       }
+
       @Override
       public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         handlerCtx = null;
-        if(connectedHandlerInvoked.get()) {
+        if (connectedHandlerInvoked.get()) {
           closeHandler.handle(null);
         }
       }
@@ -94,7 +99,7 @@ public class TcpTransport extends Transport {
   @Override
   void handshakeCompleteHandler(Channel channel) {
     baseHandshakeComplete = true;
-    if(tcpHandshakeComplete && !connectedHandlerInvoked.getAndSet(true)) {
+    if (tcpHandshakeComplete && !connectedHandlerInvoked.getAndSet(true)) {
       connectedHandler.handle(null);
     }
   }

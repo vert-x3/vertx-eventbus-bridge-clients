@@ -22,7 +22,7 @@ public class DeliveryOptions {
    * When sending a message with a response handler a send timeout can be provided. If no response is received
    * within the timeout the handler will be called with a failure.
    *
-   * @return  the value of send timeout
+   * @return the value of send timeout
    */
   public long getSendTimeout() {
     return timeout;
@@ -45,7 +45,7 @@ public class DeliveryOptions {
   /**
    * Adds a header to be send with each request.
    *
-   * @param key the header key.
+   * @param key   the header key.
    * @param value the header value.
    * @return a reference to this, so the API can be used fluently
    */

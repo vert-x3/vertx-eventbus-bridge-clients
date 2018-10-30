@@ -56,7 +56,7 @@ public abstract class Transport extends ChannelInitializer {
 
     channel.config().setConnectTimeoutMillis(this.options.getConnectTimeout());
 
-    if(this.options.getProxyHost() == null && !this.options.isSsl()) {
+    if (this.options.getProxyHost() == null && !this.options.isSsl()) {
       pipeline.addLast(new ChannelInboundHandlerAdapter() {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -66,7 +66,7 @@ public abstract class Transport extends ChannelInitializer {
       });
     }
 
-    if(this.options.getProxyHost() != null) {
+    if (this.options.getProxyHost() != null) {
 
       String proxyHost = options.getProxyHost();
       int proxyPort = options.getProxyPort();
@@ -77,7 +77,7 @@ public abstract class Transport extends ChannelInitializer {
 
       final ProxyHandler proxyHandler;
 
-      switch(proxyType) {
+      switch (proxyType) {
         default:
         case HTTP:
           proxyHandler = proxyUsername != null && proxyPassword != null ?
@@ -100,7 +100,7 @@ public abstract class Transport extends ChannelInitializer {
           if (evt instanceof ProxyConnectionEvent) {
             pipeline.remove(proxyHandler);
             pipeline.remove(this);
-            if(!Transport.this.options.isSsl()) {
+            if (!Transport.this.options.isSsl()) {
               Transport.this.handshakeCompleteHandler(channel);
             }
           }
@@ -117,12 +117,12 @@ public abstract class Transport extends ChannelInitializer {
 
     SslContextBuilder builder = SslContextBuilder.forClient();
 
-    if(this.options.isSsl()) {
+    if (this.options.isSsl()) {
       SSLParameters sslParams = new SSLParameters();
 
-      if(this.options.isTrustAll()) {
+      if (this.options.isTrustAll()) {
         builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
-      } else if(this.options.getStorePath() != null) {
+      } else if (this.options.getStorePath() != null) {
         if ("pem".equals(this.options.getStoreType())) {
           builder.trustManager(new File(this.options.getStorePath()));
         } else {
@@ -132,7 +132,7 @@ public abstract class Transport extends ChannelInitializer {
           } else {
             keyStore = KeyStore.getInstance("pkcs12");
           }
-          if(this.options.getStorePassword() != null) {
+          if (this.options.getStorePassword() != null) {
             keyStore.load(new FileInputStream(this.options.getStorePath()), this.options.getStorePassword().toCharArray());
           } else {
             keyStore.load(new FileInputStream(this.options.getStorePath()), null);
@@ -141,7 +141,7 @@ public abstract class Transport extends ChannelInitializer {
           trustManagerFactory.init(keyStore);
           builder.trustManager(trustManagerFactory);
         }
-        if(this.options.isVerifyHost()) {
+        if (this.options.isVerifyHost()) {
           sslParams.setEndpointIdentificationAlgorithm("HTTPS");
         }
       }
@@ -156,13 +156,13 @@ public abstract class Transport extends ChannelInitializer {
 
       SslHandler sslHandler = new SslHandler(sslEngine, false);
       sslHandler.handshakeFuture().addListener(new GenericFutureListener<Future<Channel>>() {
-          @Override
-          public void operationComplete(Future<Channel> future) {
-            if(future.isSuccess()) {
-              Transport.this.handshakeCompleteHandler(future.getNow());
-            }
+        @Override
+        public void operationComplete(Future<Channel> future) {
+          if (future.isSuccess()) {
+            Transport.this.handshakeCompleteHandler(future.getNow());
           }
-        });
+        }
+      });
       pipeline.addLast("sslHandler", sslHandler);
       pipeline.addLast("sslExceptionHandler", new ChannelHandlerAdapter() {
         @Override
@@ -216,9 +216,10 @@ public abstract class Transport extends ChannelInitializer {
 
   /**
    * Transports can use this method to implement error handling for messages sent to the server.
+   *
    * @param handlerCtx the channel context
-   * @param message the message being sent
-   * @param future the channel future created by a {@code write} method
+   * @param message    the message being sent
+   * @param future     the channel future created by a {@code write} method
    */
   void addSendErrorHandler(final ChannelHandlerContext handlerCtx, final String message, ChannelFuture future) {
     future.addListener(new GenericFutureListener<Future<Void>>() {
@@ -226,8 +227,8 @@ public abstract class Transport extends ChannelInitializer {
       public void operationComplete(Future<Void> future) {
         // Suppress "Could not send because connection is closed" and SSLExceptions, as they are handled in sslExceptionHandler
         //noinspection ThrowableResultOfMethodCallIgnored
-        if(!future.isSuccess() && handlerCtx.channel().isOpen() && !(future.cause() instanceof SSLException)) {
-          if(message.length() > EventBusClient.MESSAGE_PRINT_LIMIT) {
+        if (!future.isSuccess() && handlerCtx.channel().isOpen() && !(future.cause() instanceof SSLException)) {
+          if (message.length() > EventBusClient.MESSAGE_PRINT_LIMIT) {
             handleError("Could not send message with " + message.length() + " chars.", future.cause());
           } else {
             handleError("Could not send message: " + message, future.cause());
@@ -239,7 +240,7 @@ public abstract class Transport extends ChannelInitializer {
 
   /**
    * This method is being called by {@code Transport} when the proxy & TLS handshake has been completed successfully.
-   *
+   * <p>
    * It needs to be overriden by classes inheriting {@code Transport} and can be used to call the connectedHandler,
    * if there are no more initializing tasks to be done (e.g. WebSocket handshake).
    *
@@ -252,6 +253,7 @@ public abstract class Transport extends ChannelInitializer {
    * It is being invoked by {@code EventBusClient} when a message needs to be sent.
    * Transports can pass {@code ChannelFuture}s created by {@code write} methods to {@code addSendErrorHandler} to
    * implement error handling for failed messages.
+   *
    * @param message the message to be send
    */
   public abstract void send(String message);

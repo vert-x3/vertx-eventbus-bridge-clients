@@ -30,6 +30,7 @@ public class EventBusClient {
 
   /**
    * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge
+   *
    * @param eventBusClientOptions the {@code EventBusClient} options
    * @return
    */
@@ -39,8 +40,9 @@ public class EventBusClient {
 
   /**
    * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge
+   *
    * @param eventBusClientOptions the {@code EventBusClient} options
-   * @param jsonCodec the JSON codec to use
+   * @param jsonCodec             the JSON codec to use
    * @return
    */
   public static EventBusClient tcp(EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
@@ -54,6 +56,7 @@ public class EventBusClient {
 
   /**
    * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus SockJS bridge using WebSockets
+   *
    * @param eventBusClientOptions the {@code EventBusClient} options
    * @return
    */
@@ -63,8 +66,9 @@ public class EventBusClient {
 
   /**
    * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus SockJS bridge using WebSockets
+   *
    * @param eventBusClientOptions the {@code EventBusClient} options
-   * @param jsonCodec the JSON codec to use
+   * @param jsonCodec             the JSON codec to use
    * @return
    */
   public static EventBusClient websocket(EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
@@ -113,7 +117,7 @@ public class EventBusClient {
   private synchronized void execute(Handler<Transport> task) {
     if (connected) {
       task.handle(transport);
-    } else if(closed) {
+    } else if (closed) {
       logger.error("This EventBusClient is closed.");
     } else {
       pendingTasks.add(task);
@@ -127,7 +131,7 @@ public class EventBusClient {
 
   private synchronized void initializeTransport() {
 
-    if(initializedTransport) {
+    if (initializedTransport) {
       return;
     }
     initializedTransport = true;
@@ -154,7 +158,7 @@ public class EventBusClient {
           channel = connectFuture.channel();
           connectFuture = null;
 
-          if(EventBusClient.this.connectedHandler != null)  {
+          if (EventBusClient.this.connectedHandler != null) {
 
             EventBusClient.this.connectedHandler.handle(new Handler<Void>() {
               @Override
@@ -162,8 +166,7 @@ public class EventBusClient {
                 EventBusClient.this.handlePendingTasks();
               }
             });
-          }
-          else  {
+          } else {
             EventBusClient.this.handlePendingTasks();
           }
         }
@@ -198,14 +201,14 @@ public class EventBusClient {
 
   private synchronized void connectTransport() {
 
-    if(connected || closed || connectFuture != null || reconnectFuture != null) {
+    if (connected || closed || connectFuture != null || reconnectFuture != null) {
       return;
     }
 
     String host = EventBusClient.this.eventBusClientOptions.getHost();
     Integer port = EventBusClient.this.eventBusClientOptions.getPort();
 
-    if(EventBusClient.this.eventBusClientOptions.getProxyHost() != null) {
+    if (EventBusClient.this.eventBusClientOptions.getProxyHost() != null) {
       logger.info("Connecting to bridge at " + host + ":" + port + " (via " + EventBusClient.this.eventBusClientOptions.getProxyHost() + ") using " + this.transport.getClass().getSimpleName() + "...");
     } else {
       logger.info("Connecting to bridge at " + host + ":" + port + " using " + this.transport.getClass().getSimpleName() + "...");
@@ -213,26 +216,25 @@ public class EventBusClient {
 
     connectFuture = bootstrap.connect(host, port)
       .addListener(new GenericFutureListener<Future<? super Void>>() {
-      @Override
-      public void operationComplete(Future future) {
+        @Override
+        public void operationComplete(Future future) {
 
-        if(!future.isSuccess()) {
-          handleError("Connecting to bridge failed.", future.cause());
-          connectFuture = null;
-          autoReconnect();
+          if (!future.isSuccess()) {
+            handleError("Connecting to bridge failed.", future.cause());
+            connectFuture = null;
+            autoReconnect();
+          }
         }
-      }
-    });
+      });
   }
 
   private synchronized void autoReconnect() {
 
-    if(!closed &&
-       reconnectFuture == null &&
-       EventBusClient.this.eventBusClientOptions.isAutoReconnect() &&
+    if (!closed &&
+      reconnectFuture == null &&
+      EventBusClient.this.eventBusClientOptions.isAutoReconnect() &&
       (EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries() == 0 ||
-        reconnectTries < EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries()))
-    {
+        reconnectTries < EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries())) {
       ++reconnectTries;
       int interval = EventBusClient.this.eventBusClientOptions.getAutoReconnectInterval();
       logger.info("Auto reconnecting in " + interval + "ms (try number " + reconnectTries + ")...");
@@ -250,8 +252,8 @@ public class EventBusClient {
   private void handlePendingTasks() {
 
     // First register, then send pending tasks, as those tasks may result in messages being sent to registered channels
-    for(String address : consumerMap.keySet()) {
-      if(consumerMap.get(address).reregisterAtServer) {
+    for (String address : consumerMap.keySet()) {
+      if (consumerMap.get(address).reregisterAtServer) {
         logger.info("Registering address: " + address);
         send("register", address, null, this.defaultOptions == null ? null : this.defaultOptions.getHeaders(), null);
       }
@@ -295,7 +297,7 @@ public class EventBusClient {
           String message = (String) msg.get("message");
 //          int failureCode = msg.get("failureCode").getAsInt();
 //          String failureType = msg.get("failureType").getAsString();
-          if(address == null) {
+          if (address == null) {
             logger.info("Received error without address present, probably the address was not found: " + message);
             return;
           }
@@ -310,6 +312,7 @@ public class EventBusClient {
 
   /**
    * Sets the default delivery options (message send timeout and headers) to be used for subsequent messages.
+   *
    * @param defaultOptions the new default delivery options
    * @return a reference to this, so the API can be used fluently
    */
@@ -320,6 +323,7 @@ public class EventBusClient {
 
   /**
    * Connects to the bridge server
+   *
    * @return a reference to this, so the API can be used fluently
    */
   public EventBusClient connect() {
@@ -332,6 +336,7 @@ public class EventBusClient {
 
   /**
    * Returns whether the client is currently connected to the bridge server.
+   *
    * @return whether the client is currently connected to the bridge server
    */
   public boolean isConnected() {
@@ -340,12 +345,12 @@ public class EventBusClient {
 
   /**
    * Closes the connection to the bridge server, if it is open.
-   *
+   * <p>
    * Until {@code connect} is invoked, the client will not connect to the server
    * (neither through auto reconnect, nor by sending a message).
    */
   public void close() {
-    if(channel != null) {
+    if (channel != null) {
       channel.close();
     }
     closed = true;
@@ -356,8 +361,8 @@ public class EventBusClient {
    * <p>
    * The message will be delivered to at most one of the handlers registered to the address.
    *
-   * @param address  the address to send it to
-   * @param message  the message, may be {@code null}
+   * @param address the address to send it to
+   * @param message the message, may be {@code null}
    * @return a reference to this, so the API can be used fluently
    */
   public EventBusClient send(String address, Object message) {
@@ -370,8 +375,8 @@ public class EventBusClient {
    * <p>
    * The message will be delivered to at most one of the handlers registered to the address.
    *
-   * @param address  the address to send it to
-   * @param message  the message, may be {@code null}
+   * @param address the address to send it to
+   * @param message the message, may be {@code null}
    * @return a reference to this, so the API can be used fluently
    */
   public <T> EventBusClient send(String address, Object message, final Handler<AsyncResult<Message<T>>> replyHandler) {
@@ -381,9 +386,9 @@ public class EventBusClient {
   /**
    * Like {@link #send(String, Object)} but specifying {@code options} that can be used to configure the delivery.
    *
-   * @param address  the address to send it to
-   * @param message  the message, may be {@code null}
-   * @param options  delivery options
+   * @param address the address to send it to
+   * @param message the message, may be {@code null}
+   * @param options delivery options
    * @return a reference to this, so the API can be used fluently
    */
   public EventBusClient send(String address, Object message, DeliveryOptions options) {
@@ -394,10 +399,10 @@ public class EventBusClient {
    * Like {@link #send(String, Object, DeliveryOptions)} but specifying a {@code replyHandler} that will be called if the recipient
    * subsequently replies to the message.
    *
-   * @param address  the address to send it to
-   * @param message  the message, may be {@code null}
-   * @param options  delivery options
-   * @param replyHandler  reply handler will be called when any reply from the recipient is received, may be {@code null}
+   * @param address      the address to send it to
+   * @param message      the message, may be {@code null}
+   * @param options      delivery options
+   * @param replyHandler reply handler will be called when any reply from the recipient is received, may be {@code null}
    * @return a reference to this, so the API can be used fluently
    */
   public <T> EventBusClient send(String address, Object message, DeliveryOptions options, final Handler<AsyncResult<Message<T>>> replyHandler) {
@@ -408,7 +413,12 @@ public class EventBusClient {
 
       final MessageHandler<T> messageHandler = new MessageHandler<T>() {
         @Override
-        public String address() { return replyAddr; };
+        public String address() {
+          return replyAddr;
+        }
+
+        ;
+
         @Override
         public void handleMessage(Message<T> msg) {
           if (registered.compareAndSet(true, false)) {
@@ -417,6 +427,7 @@ public class EventBusClient {
             replyHandler.handle(AsyncResult.<Message<T>>success(msg));
           }
         }
+
         @Override
         public void handleError(Throwable err) {
           if (registered.compareAndSet(true, false)) {
@@ -446,10 +457,9 @@ public class EventBusClient {
    * Publish a message.<p>
    * The message will be delivered to all handlers registered to the address.
    *
-   * @param address  the address to publish it to
-   * @param message  the message, may be {@code null}
+   * @param address the address to publish it to
+   * @param message the message, may be {@code null}
    * @return a reference to this, so the API can be used fluently
-   *
    */
   public EventBusClient publish(String address, Object message) {
     send("publish", address, message, defaultOptions.getHeaders(), null);
@@ -459,11 +469,10 @@ public class EventBusClient {
   /**
    * Like {@link #publish(String, Object)} but specifying {@code options} that can be used to configure the delivery.
    *
-   * @param address  the address to publish it to
-   * @param message  the message, may be {@code null}
-   * @param options  delivery options
+   * @param address the address to publish it to
+   * @param message the message, may be {@code null}
+   * @param options delivery options
    * @return a reference to this, so the API can be used fluently
-   *
    */
   public EventBusClient publish(String address, Object message, DeliveryOptions options) {
     send("publish", address, message, options == null ? null : options.getHeaders(), null);
@@ -473,9 +482,8 @@ public class EventBusClient {
   /**
    * Create a consumer and register it against the specified address.
    *
-   * @param address  the address that will register it at
-   * @param handler  the handler that will process the received messages
-   *
+   * @param address the address that will register it at
+   * @param handler the handler that will process the received messages
    * @return the event bus message consumer
    */
   public <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler) {
@@ -492,8 +500,8 @@ public class EventBusClient {
       if (consumers == null) {
         handlers = Collections.singletonList((MessageHandler) handler);
         // If we would just create a task for it, that would be send upon connection creation redundandly to all other re-registered handlers
-        if(atServer) {
-          if(connected) {
+        if (atServer) {
+          if (connected) {
             logger.info("Registering address: " + address);
             send("register", address, null, headers, null);
           } else {
@@ -537,7 +545,7 @@ public class EventBusClient {
 
   /**
    * Set a connected handler, which is called everytime the connection is (re)established.
-   *
+   * <p>
    * The close handler is being handed over a Future, which it must complete in order for any queued messages
    * to be flushed. This allows the client to perform any initializing operations such as authorization before
    * sending other messages to the server.
@@ -607,7 +615,7 @@ public class EventBusClient {
     execute(new Handler<Transport>() {
       @Override
       public void handle(Transport event) {
-        if(message.length() > MESSAGE_PRINT_LIMIT) {
+        if (message.length() > MESSAGE_PRINT_LIMIT) {
           logger.info("Sending message with " + message.length() + " chars.");
         } else {
           logger.info("Sending message: " + message);

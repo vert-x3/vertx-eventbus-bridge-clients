@@ -35,7 +35,8 @@ public class TcpBusTest {
   @BeforeClass
   public static void beforeClass() throws UnknownHostException {
     socksProxy = new SocksProxy("vertx-user");
-    socksProxy.start(Vertx.vertx(), v -> {});
+    socksProxy.start(Vertx.vertx(), v -> {
+    });
   }
 
   @AfterClass
@@ -52,15 +53,15 @@ public class TcpBusTest {
   protected void setUpBridges(TestContext ctx) {
 
     BridgeOptions options = new BridgeOptions()
-        .addInboundPermitted(new PermittedOptions().setAddressRegex(".*"))
-        .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"));
+      .addInboundPermitted(new PermittedOptions().setAddressRegex(".*"))
+      .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"));
 
-    TcpEventBusBridge plainBridge = TcpEventBusBridge.create(vertx,options)
+    TcpEventBusBridge plainBridge = TcpEventBusBridge.create(vertx, options)
       .listen(7000, ctx.asyncAssertSuccess());
 
     TcpEventBusBridge.create(vertx, options, new NetServerOptions()
-        .setSsl(true)
-        .setKeyStoreOptions(new JksOptions().setPath("server-keystore.jks").setPassword("wibble")))
+      .setSsl(true)
+      .setKeyStoreOptions(new JksOptions().setPath("server-keystore.jks").setPassword("wibble")))
       .listen(7001, ctx.asyncAssertSuccess());
 
     ctx.put("bridge", plainBridge);
@@ -113,7 +114,7 @@ public class TcpBusTest {
     int num = 3;
     final Async async = ctx.async(num);
     EventBusClient client = client(ctx);
-    for (int i = 0;i < num;i++) {
+    for (int i = 0; i < num; i++) {
       vertx.eventBus().consumer("server_addr", msg -> {
         ctx.assertEquals(new JsonObject().put("message", "hello"), msg.body());
         countDownAndCloseClient(async, client);
@@ -146,7 +147,7 @@ public class TcpBusTest {
     int num = 3;
     final Async async = ctx.async(num);
     final EventBusClient client = client(ctx);
-    for (int i = 0;i < num;i++) {
+    for (int i = 0; i < num; i++) {
       client.consumer("client_addr", new Handler<Message<Object>>() {
         @Override
         public void handle(Message<Object> event) {
@@ -343,8 +344,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testConnectionHandler(final TestContext ctx) throws Exception
-  {
+  public void testConnectionHandler(final TestContext ctx) throws Exception {
     final Async async = ctx.async(3);
     AtomicBoolean connectedHandlerDone = new AtomicBoolean(false);
     EventBusClient client = client(ctx);
@@ -367,8 +367,7 @@ public class TcpBusTest {
 
       client.close();
 
-      if(!connectedHandlerDone.get())
-      {
+      if (!connectedHandlerDone.get()) {
         ctx.fail("Messages should only be send after the connectedHandler has called it's handler.");
         return;
       }
@@ -380,8 +379,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testAutoReconnect(final TestContext ctx) throws Exception
-  {
+  public void testAutoReconnect(final TestContext ctx) throws Exception {
     final Async async = ctx.async(2);
 
     EventBusClient client = client(ctx);
@@ -399,19 +397,19 @@ public class TcpBusTest {
     this.stopBridge(ctx, v -> {
 
       sleep(ctx, 2000, "Could not sleep after stopping bridge.");
-      this.startBridge(ctx, x -> {});
+      this.startBridge(ctx, x -> {
+      });
     });
   }
 
   @Test
-  public void testSendDefaultOptionsHeaders(final TestContext ctx) throws Exception
-  {
+  public void testSendDefaultOptionsHeaders(final TestContext ctx) throws Exception {
     final Async async = ctx.async(3);
     EventBusClient client = client(ctx);
 
     vertx.eventBus().consumer("server_addr", msg -> {
       String token = msg.headers().get("token");
-      if(token == null) {
+      if (token == null) {
         msg.reply(new JsonObject().putNull("token"));
       } else {
         msg.reply(new JsonObject().put("token", token));
@@ -442,13 +440,12 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testIdleTimeout(final TestContext ctx) throws Exception
-  {
+  public void testIdleTimeout(final TestContext ctx) throws Exception {
     final Async async = ctx.async(5);
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setIdleTimeout(100)
-                               .setAutoReconnectInterval(0);
+      .setAutoReconnectInterval(0);
 
     client.connectedHandler(event -> {
       countDownAndCloseClient(async, client);
@@ -494,8 +491,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testSslJksTruststore(final TestContext ctx) throws Exception
-  {
+  public void testSslJksTruststore(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
@@ -507,8 +503,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testSslPemTruststore(final TestContext ctx) throws Exception
-  {
+  public void testSslPemTruststore(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
@@ -520,8 +515,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testSslPfxTruststore(final TestContext ctx) throws Exception
-  {
+  public void testSslPfxTruststore(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
@@ -533,8 +527,7 @@ public class TcpBusTest {
   }
 
   @Test
-  public void testVerifyHostsFailure(final TestContext ctx) throws Exception
-  {
+  public void testVerifyHostsFailure(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
@@ -579,11 +572,11 @@ public class TcpBusTest {
 
     // VertX SocksProxy only supports connecting to hostnames, not IPv4/6
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-        .setProxyType(ProxyType.SOCKS5)
-        .setProxyHost("localhost")
-        .setProxyPort(11080)
-        .setProxyUsername("vertx-user")
-        .setProxyPassword("vertx-user");
+      .setProxyType(ProxyType.SOCKS5)
+      .setProxyHost("localhost")
+      .setProxyPort(11080)
+      .setProxyUsername("vertx-user")
+      .setProxyPassword("vertx-user");
 
     performHelloWorld(ctx, async, client);
   }
@@ -594,11 +587,11 @@ public class TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7001).setSsl(true).setTrustAll(true).setAutoReconnect(false)
-        .setProxyType(ProxyType.SOCKS5)
-        .setProxyHost("localhost")
-        .setProxyPort(11080)
-        .setProxyUsername("vertx-user")
-        .setProxyPassword("vertx-user");
+      .setProxyType(ProxyType.SOCKS5)
+      .setProxyHost("localhost")
+      .setProxyPort(11080)
+      .setProxyUsername("vertx-user")
+      .setProxyPassword("vertx-user");
 
     performHelloWorld(ctx, async, client);
   }
@@ -609,11 +602,11 @@ public class TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-        .setProxyType(ProxyType.SOCKS5)
-        .setProxyHost("localhost")
-        .setProxyPort(11080)
-        .setProxyUsername("vertx-user2")
-        .setProxyPassword("vertx-user");
+      .setProxyType(ProxyType.SOCKS5)
+      .setProxyHost("localhost")
+      .setProxyPort(11080)
+      .setProxyUsername("vertx-user2")
+      .setProxyPassword("vertx-user");
 
     client.connectedHandler(event -> ctx.fail("Should not connect."));
     client.exceptionHandler(event -> {
@@ -629,17 +622,17 @@ public class TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-        .setProxyType(ProxyType.SOCKS5)
-        .setProxyHost("localhost")
-        .setProxyPort(11081)
-        .setProxyUsername("vertx-user")
-        .setProxyPassword("vertx-user");
+      .setProxyType(ProxyType.SOCKS5)
+      .setProxyHost("localhost")
+      .setProxyPort(11081)
+      .setProxyUsername("vertx-user")
+      .setProxyPassword("vertx-user");
 
     performHelloWorldFailure(ctx, async, client);
   }
 
   protected synchronized void countDownAndCloseClient(Async async, EventBusClient client) {
-    if(async.count() == 1) {
+    if (async.count() == 1) {
       client.close();
     }
 

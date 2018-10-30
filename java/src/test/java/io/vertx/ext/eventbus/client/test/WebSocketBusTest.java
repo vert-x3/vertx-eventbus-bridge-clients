@@ -50,9 +50,9 @@ public class WebSocketBusTest extends TcpBusTest {
   protected void setUpBridges(TestContext ctx) {
     Router router = Router.router(vertx);
     BridgeOptions opts = new BridgeOptions()
-        .setPingTimeout(15000)
-        .addInboundPermitted(new PermittedOptions().setAddressRegex(".*"))
-        .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"));
+      .setPingTimeout(15000)
+      .addInboundPermitted(new PermittedOptions().setAddressRegex(".*"))
+      .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"));
     SockJSHandler ebHandler = SockJSHandler.create(vertx).bridge(opts);
     router.route("/eventbus-test/*").handler(ebHandler);
     HttpServer server = vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebsocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE))
@@ -61,7 +61,7 @@ public class WebSocketBusTest extends TcpBusTest {
 
     vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebsocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE).setSsl(true).setKeyStoreOptions(
       new JksOptions().setPath("server-keystore.jks").setPassword("wibble")
-      ))
+    ))
       .requestHandler(router::accept)
       .listen(7001, ctx.asyncAssertSuccess());
 
@@ -89,7 +89,7 @@ public class WebSocketBusTest extends TcpBusTest {
   @Override
   protected EventBusClient client(TestContext ctx) {
     EventBusClientOptions options = new EventBusClientOptions().setPort(7000).setWebsocketPath("/eventbus-test/websocket")
-                                                                                                                   .setWebsocketMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE);
+      .setWebsocketMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE);
     ctx.put("clientOptions", options);
     ctx.put("codec", new GsonCodec());
     return EventBusClient.websocket(options);
@@ -126,7 +126,7 @@ public class WebSocketBusTest extends TcpBusTest {
     EventBusClient client = client(ctx);
 
     ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-                                             .setProxyType(ProxyType.HTTP).setProxyHost("localhost").setProxyPort(8100);
+      .setProxyType(ProxyType.HTTP).setProxyHost("localhost").setProxyPort(8100);
 
     performHelloWorldFailure(ctx, async, client);
   }
@@ -210,7 +210,7 @@ public class WebSocketBusTest extends TcpBusTest {
 
   private String getStringWithSize(int numberOfBytes) {
     StringBuilder builder = new StringBuilder();
-    for(int i = 0; i < numberOfBytes; ++i) {
+    for (int i = 0; i < numberOfBytes; ++i) {
       builder.append("x");
     }
     return builder.toString();

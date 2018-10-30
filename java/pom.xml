@@ -28,6 +28,7 @@
 
   <properties>
     <netty.version>4.1.15.Final</netty.version>
+    <asciidoc.dir>${project.basedir}/src/main/asciidoc</asciidoc.dir>
   </properties>
 
   <artifactId>vertx-eventbus-client</artifactId>
@@ -116,6 +117,12 @@
       <version>2.9.0</version>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-docgen</artifactId>
+      <version>0.9.0</version>
+      <scope>provided</scope>
+    </dependency>
     <!--<dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
@@ -161,6 +168,62 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Transform the Asciidoctor to html -->
+      <plugin>
+        <groupId>org.asciidoctor</groupId>
+        <artifactId>asciidoctor-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.build.directory}/asciidoc</sourceDirectory>
+            </configuration>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>javadoc</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>default-compile</id>
+              <configuration>
+                <annotationProcessors>
+                  <annotationProcessor>io.vertx.docgen.JavaDocGenProcessor</annotationProcessor>
+                </annotationProcessors>
+                <compilerArgs>
+                  <arg>-Adocgen.source=${asciidoc.dir}</arg>
+                  <arg>-Adocgen.output=${project.build.directory}/asciidoc</arg>
+                  <arg>-Amaven.groupId=${project.groupId}</arg>
+                  <arg>-Amaven.artifactId=${project.artifactId}</arg>
+                  <arg>-Amaven.version=${project.version}</arg>
+                </compilerArgs>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
   <profiles>
     <profile>

@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TcpBusTest {
 
   private static SocksProxy socksProxy;
+  EventBusClientOptions baseOptions;
   Vertx vertx;
 
   @BeforeClass
@@ -47,6 +48,7 @@ public class TcpBusTest {
   @Before
   public void before(TestContext ctx) {
     vertx = Vertx.vertx();
+    baseOptions = new EventBusClientOptions().setPort(7000);
     setUpBridges(ctx);
   }
 
@@ -84,9 +86,7 @@ public class TcpBusTest {
   }
 
   protected EventBusClient client(TestContext ctx) {
-    EventBusClientOptions options = new EventBusClientOptions().setPort(7000);
-    ctx.put("clientOptions", options);
-    return EventBusClient.tcp(options);
+    return EventBusClient.tcp(baseOptions);
   }
 
   @After
@@ -442,10 +442,12 @@ public class TcpBusTest {
   @Test
   public void testIdleTimeout(final TestContext ctx) throws Exception {
     final Async async = ctx.async(5);
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setIdleTimeout(100)
+    baseOptions
+      .setIdleTimeout(100)
       .setAutoReconnectInterval(0);
+
+    EventBusClient client = client(ctx);
 
     client.connectedHandler(event -> {
       countDownAndCloseClient(async, client);
@@ -459,9 +461,14 @@ public class TcpBusTest {
   @Test
   public void testSslTrustAll(final TestContext ctx) {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001).setSsl(true).setTrustAll(true).setAutoReconnect(false);
+    baseOptions
+      .setPort(7001)
+      .setSsl(true)
+      .setTrustAll(true)
+      .setAutoReconnect(false);
+
+    EventBusClient client = client(ctx);
 
     performHelloWorld(ctx, async, client);
   }
@@ -469,9 +476,13 @@ public class TcpBusTest {
   @Test
   public void testSslTrustException(final TestContext ctx) {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001).setSsl(true).setAutoReconnect(false);
+    baseOptions
+      .setPort(7001)
+      .setSsl(true)
+      .setAutoReconnect(false);
+
+    EventBusClient client = client(ctx);
 
     client.connectedHandler(event -> {
       client.close();
@@ -493,11 +504,15 @@ public class TcpBusTest {
   @Test
   public void testSslJksTruststore(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    EventBusClientOptions options = ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
-      .setSsl(true).setAutoReconnect(false);
-    options.setStorePath("server-keystore.jks").setStorePassword("wibble");
+    baseOptions
+      .setPort(7001)
+      .setSsl(true)
+      .setAutoReconnect(false)
+      .setStorePath("server-keystore.jks")
+      .setStorePassword("wibble");
+
+    EventBusClient client = client(ctx);
 
     performHelloWorld(ctx, async, client);
   }
@@ -507,9 +522,12 @@ public class TcpBusTest {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
 
-    EventBusClientOptions options = ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
-      .setSsl(true).setAutoReconnect(false);
-    options.setStoreType("pem").setStorePath("server-keystore-nopass.pem");
+    baseOptions
+      .setPort(7001)
+      .setSsl(true)
+      .setAutoReconnect(false)
+      .setStoreType("pem")
+      .setStorePath("server-keystore-nopass.pem");
 
     performHelloWorld(ctx, async, client);
   }
@@ -517,11 +535,16 @@ public class TcpBusTest {
   @Test
   public void testSslPfxTruststore(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    EventBusClientOptions options = ctx.<EventBusClientOptions>get("clientOptions").setPort(7001)
-      .setSsl(true).setAutoReconnect(false);
-    options.setStorePath("server-keystore.pfx").setStorePassword("wibble").setStoreType("pfx");
+    baseOptions
+      .setPort(7001)
+      .setSsl(true)
+      .setAutoReconnect(false)
+      .setStorePath("server-keystore.pfx")
+      .setStorePassword("wibble")
+      .setStoreType("pfx");
+
+    EventBusClient client = client(ctx);
 
     performHelloWorld(ctx, async, client);
   }
@@ -529,11 +552,17 @@ public class TcpBusTest {
   @Test
   public void testVerifyHostsFailure(final TestContext ctx) throws Exception {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    EventBusClientOptions options = ctx.<EventBusClientOptions>get("clientOptions").setHost("127.0.0.1").setPort(7001)
-      .setSsl(true).setAutoReconnect(false);
-    options.setStorePath("server-keystore.pfx").setStorePassword("wibble").setStoreType("pfx");
+    baseOptions
+      .setHost("127.0.0.1")
+      .setPort(7001)
+      .setSsl(true)
+      .setAutoReconnect(false)
+      .setStorePath("server-keystore.pfx")
+      .setStorePassword("wibble")
+      .setStoreType("pfx");
+
+    EventBusClient client = client(ctx);
 
     client.connectedHandler(event -> {
       client.close();
@@ -568,15 +597,18 @@ public class TcpBusTest {
   @Test
   public void testProxySocks5(final TestContext ctx) {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
     // VertX SocksProxy only supports connecting to hostnames, not IPv4/6
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+    baseOptions
+      .setPort(7000)
+      .setAutoReconnect(false)
       .setProxyType(ProxyType.SOCKS5)
       .setProxyHost("localhost")
       .setProxyPort(11080)
       .setProxyUsername("vertx-user")
       .setProxyPassword("vertx-user");
+
+    EventBusClient client = client(ctx);
 
     performHelloWorld(ctx, async, client);
   }
@@ -584,14 +616,19 @@ public class TcpBusTest {
   @Test
   public void testProxySocks5SslTrustAll(final TestContext ctx) {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001).setSsl(true).setTrustAll(true).setAutoReconnect(false)
+    baseOptions
+      .setPort(7001)
+      .setSsl(true)
+      .setTrustAll(true)
+      .setAutoReconnect(false)
       .setProxyType(ProxyType.SOCKS5)
       .setProxyHost("localhost")
       .setProxyPort(11080)
       .setProxyUsername("vertx-user")
       .setProxyPassword("vertx-user");
+
+    EventBusClient client = client(ctx);
 
     performHelloWorld(ctx, async, client);
   }
@@ -599,14 +636,17 @@ public class TcpBusTest {
   @Test
   public void testProxySocks5UserFailure(final TestContext ctx) {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+    baseOptions
+      .setPort(7000)
+      .setAutoReconnect(false)
       .setProxyType(ProxyType.SOCKS5)
       .setProxyHost("localhost")
       .setProxyPort(11080)
       .setProxyUsername("vertx-user2")
       .setProxyPassword("vertx-user");
+
+    EventBusClient client = client(ctx);
 
     client.connectedHandler(event -> ctx.fail("Should not connect."));
     client.exceptionHandler(event -> {
@@ -619,14 +659,16 @@ public class TcpBusTest {
   @Test
   public void testProxySocks5Failure(final TestContext ctx) {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+    baseOptions
+      .setPort(7000)
+      .setAutoReconnect(false)
       .setProxyType(ProxyType.SOCKS5)
       .setProxyHost("localhost")
       .setProxyPort(11081)
       .setProxyUsername("vertx-user")
       .setProxyPassword("vertx-user");
+    EventBusClient client = client(ctx);
 
     performHelloWorldFailure(ctx, async, client);
   }

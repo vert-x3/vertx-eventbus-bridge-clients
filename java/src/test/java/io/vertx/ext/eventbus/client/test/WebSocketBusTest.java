@@ -47,6 +47,15 @@ public class WebSocketBusTest extends TcpBusTest {
   }
 
   @Override
+  public void before(TestContext ctx) {
+    super.before(ctx);
+    baseOptions = new EventBusClientOptions()
+      .setPort(7000)
+      .setWebsocketPath("/eventbus-test/websocket")
+      .setWebsocketMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE);
+  }
+
+  @Override
   protected void setUpBridges(TestContext ctx) {
     Router router = Router.router(vertx);
     BridgeOptions opts = new BridgeOptions()
@@ -88,11 +97,8 @@ public class WebSocketBusTest extends TcpBusTest {
 
   @Override
   protected EventBusClient client(TestContext ctx) {
-    EventBusClientOptions options = new EventBusClientOptions().setPort(7000).setWebsocketPath("/eventbus-test/websocket")
-      .setWebsocketMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE);
-    ctx.put("clientOptions", options);
     ctx.put("codec", new GsonCodec());
-    return EventBusClient.websocket(options);
+    return EventBusClient.websocket(baseOptions);
   }
 
   // This test is blocked by netty issue https://github.com/netty/netty/issues/5070
@@ -112,10 +118,11 @@ public class WebSocketBusTest extends TcpBusTest {
   @Test
   public void testProxyHttp(final TestContext ctx) {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
+    baseOptions.setPort(7000).setAutoReconnect(false)
       .setProxyType(ProxyType.HTTP).setProxyHost("localhost").setProxyPort(8000);
+
+    EventBusClient client = client(ctx);
 
     performHelloWorld(ctx, async, client);
   }
@@ -123,10 +130,15 @@ public class WebSocketBusTest extends TcpBusTest {
   @Test
   public void testProxyHttpFailure(final TestContext ctx) {
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false)
-      .setProxyType(ProxyType.HTTP).setProxyHost("localhost").setProxyPort(8100);
+     baseOptions
+       .setPort(7000)
+       .setAutoReconnect(false)
+       .setProxyType(ProxyType.HTTP)
+       .setProxyHost("localhost")
+       .setProxyPort(8100);
+
+    EventBusClient client = client(ctx);
 
     performHelloWorldFailure(ctx, async, client);
   }
@@ -135,9 +147,10 @@ public class WebSocketBusTest extends TcpBusTest {
   public void testMaxWebSocketFrameSend(final TestContext ctx) throws Exception {
 
     final Async async = ctx.async(2);
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false);
+    baseOptions.setPort(7000).setAutoReconnect(false);
+
+    EventBusClient client = client(ctx);
 
     vertx.eventBus().consumer("server_addr", msg -> {
       msg.reply(new JsonObject());
@@ -157,9 +170,10 @@ public class WebSocketBusTest extends TcpBusTest {
   public void testMaxWebSocketFrameSizeSendFail(final TestContext ctx) throws Exception {
 
     final Async async = ctx.async();
-    EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7000).setAutoReconnect(false);
+    baseOptions.setPort(7000).setAutoReconnect(false);
+
+    EventBusClient client = client(ctx);
 
     vertx.eventBus().consumer("server_addr", msg -> {
       msg.reply(new JsonObject());
@@ -214,5 +228,10 @@ public class WebSocketBusTest extends TcpBusTest {
       builder.append("x");
     }
     return builder.toString();
+  }
+
+  @Override
+  public void testSslTrustException(TestContext ctx) {
+    super.testSslTrustException(ctx);
   }
 }

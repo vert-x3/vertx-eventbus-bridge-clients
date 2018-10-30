@@ -25,11 +25,15 @@ public class WebSocketJacksonBusTest extends WebSocketBusTest {
   }
 
   @Override
-  protected EventBusClient client(TestContext ctx) {
-    EventBusClientOptions options = new EventBusClientOptions().setPort(7000).setWebsocketPath("/eventbus-test/websocket")
+  public void before(TestContext ctx) {
+    super.before(ctx);
+    baseOptions = new EventBusClientOptions().setPort(7000).setWebsocketPath("/eventbus-test/websocket")
       .setWebsocketMaxWebsocketFrameSize(1024 * 1024);
-    ctx.put("clientOptions", options);
+  }
+
+  @Override
+  protected EventBusClient client(TestContext ctx) {
     ctx.put("codec", new JacksonCodec());
-    return EventBusClient.websocket(options, new JacksonCodec());
+    return EventBusClient.websocket(baseOptions, new JacksonCodec());
   }
 }

@@ -15,9 +15,9 @@ public class EventBusClientOptions {
   public static final String DEFAULT_HOST = "localhost";
 
   /**
-   * The default value for port = 8080
+   * The default value for port = -1 which means 7000 for TCP and 80 for HTTP client
    */
-  public static final int DEFAULT_PORT = 8080;
+  public static final int DEFAULT_PORT = -1;
 
   /**
    * The default value of connect timeout = 60000 ms
@@ -105,10 +105,6 @@ public class EventBusClientOptions {
    * Default constructor
    */
   public EventBusClientOptions() {
-    this.init();
-  }
-
-  private void init() {
     this.host = DEFAULT_HOST;
     this.port = DEFAULT_PORT;
     this.ssl = DEFAULT_SSL;
@@ -122,6 +118,33 @@ public class EventBusClientOptions {
     this.maxAutoReconnectTries = DEFAULT_MAX_AUTO_RECONNECT_TRIES;
     this.websocketPath = EventBusClientOptions.DEFAULT_WEBSOCKET_PATH;
     this.websocketMaxWebsocketFrameSize = EventBusClientOptions.DEFAULT_MAX_WEBSOCKET_FRAME_SIZE;
+  }
+
+  /**
+   * Copy constructor
+   */
+  public EventBusClientOptions(EventBusClientOptions options) {
+    this.host = options.host;
+    this.port = options.port;
+    this.ssl = options.ssl;
+    this.storePath = options.storePath;
+    this.storePassword = options.storePassword;
+    this.storeType = options.storeType;
+    this.verifyHost = options.verifyHost;
+    this.trustAll = options.trustAll;
+    this.idleTimeout = options.idleTimeout;
+    this.pingInterval = options.pingInterval;
+    this.connectTimeout = options.connectTimeout;
+    this.autoReconnect = options.autoReconnect;
+    this.autoReconnectInterval = options.autoReconnectInterval;
+    this.maxAutoReconnectTries = options.maxAutoReconnectTries;
+    this.proxyHost = options.proxyHost;
+    this.proxyPort = options.proxyPort;
+    this.proxyType = options.proxyType;
+    this.proxyPassword = options.proxyPassword;
+    this.proxyUsername = options.proxyUsername;
+    this.websocketPath = options.websocketPath;
+    this.websocketMaxWebsocketFrameSize = options.websocketMaxWebsocketFrameSize;
   }
 
   /**

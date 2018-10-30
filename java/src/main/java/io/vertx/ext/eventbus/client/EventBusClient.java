@@ -29,55 +29,83 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class EventBusClient {
 
   /**
-   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge with default options.
    *
-   * @param eventBusClientOptions the {@code EventBusClient} options
-   * @return
+   * @return the bus client
    */
-  public static EventBusClient tcp(EventBusClientOptions eventBusClientOptions) {
-    return EventBusClient.tcp(eventBusClientOptions, new GsonCodec());
+  public static EventBusClient tcp() {
+    return EventBusClient.tcp(new EventBusClientOptions(), new GsonCodec());
   }
 
   /**
-   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge.
    *
-   * @param eventBusClientOptions the {@code EventBusClient} options
-   * @param jsonCodec             the JSON codec to use
-   * @return
+   * @param options the {@code EventBusClient} options
+   * @return the bus client
    */
-  public static EventBusClient tcp(EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
+  public static EventBusClient tcp(EventBusClientOptions options) {
+    return EventBusClient.tcp(options, new GsonCodec());
+  }
 
-    if (eventBusClientOptions == null) {
-      eventBusClientOptions = new EventBusClientOptions();
+  /**
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge.
+   *
+   * @param options the {@code EventBusClient} options
+   * @param codec   the JSON codec to use
+   * @return the bus client
+   */
+  public static EventBusClient tcp(EventBusClientOptions options, JsonCodec codec) {
+    options = new EventBusClientOptions(options);
+    if (options.getPort() == -1) {
+      options.setPort(7000);
     }
-
-    return new EventBusClient(new TcpTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
+    return new EventBusClient(new TcpTransport(options), options, codec);
   }
 
   /**
    * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus SockJS bridge using WebSockets
+   * with default options.
    *
-   * @param eventBusClientOptions the {@code EventBusClient} options
-   * @return
+   * @return the bus client
    */
-  public static EventBusClient websocket(EventBusClientOptions eventBusClientOptions) {
-    return EventBusClient.websocket(eventBusClientOptions, new GsonCodec());
+  public static EventBusClient websocket() {
+    return EventBusClient.websocket(new EventBusClientOptions(), new GsonCodec());
   }
 
   /**
    * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus SockJS bridge using WebSockets
+   * with default options.
    *
-   * @param eventBusClientOptions the {@code EventBusClient} options
-   * @param jsonCodec             the JSON codec to use
-   * @return
+   * @param codec the json codec
+   * @return the bus client
    */
-  public static EventBusClient websocket(EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
+  public static EventBusClient websocket(JsonCodec codec) {
+    return EventBusClient.websocket(new EventBusClientOptions(), codec);
+  }
 
-    if (eventBusClientOptions == null) {
-      eventBusClientOptions = new EventBusClientOptions();
+  /**
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus SockJS bridge using WebSockets.
+   *
+   * @param options the {@code EventBusClient} options
+   * @return the bus client
+   */
+  public static EventBusClient websocket(EventBusClientOptions options) {
+    return EventBusClient.websocket(options, new GsonCodec());
+  }
+
+  /**
+   * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus SockJS bridge using WebSockets.
+   *
+   * @param options the {@code EventBusClient} options
+   * @param codec   the JSON codec to use
+   * @return the bus client
+   */
+  public static EventBusClient websocket(EventBusClientOptions options, JsonCodec codec) {
+    options = new EventBusClientOptions(options);
+    if (options.getPort() == -1) {
+      options.setPort(80);
     }
-
-    return new EventBusClient(new WebSocketTransport(eventBusClientOptions), eventBusClientOptions, jsonCodec);
+    return new EventBusClient(new WebSocketTransport(options), options, codec);
   }
 
   public static int MESSAGE_PRINT_LIMIT = 10000;
@@ -86,7 +114,7 @@ public class EventBusClient {
   private final Transport transport;
   private final NioEventLoopGroup group = new NioEventLoopGroup(1);
   private Bootstrap bootstrap;
-  private final EventBusClientOptions eventBusClientOptions;
+  private final EventBusClientOptions options;
   private final JsonCodec codec;
   private InternalLogger logger;
 
@@ -104,11 +132,11 @@ public class EventBusClient {
   private volatile Handler<Throwable> exceptionHandler;
   private Handler<Void> closeHandler;
 
-  private EventBusClient(Transport transport, EventBusClientOptions eventBusClientOptions, JsonCodec jsonCodec) {
+  private EventBusClient(Transport transport, EventBusClientOptions options, JsonCodec codec) {
     this.transport = transport;
     this.bootstrap = new Bootstrap().group(this.group);
-    this.eventBusClientOptions = eventBusClientOptions;
-    this.codec = jsonCodec;
+    this.options = options;
+    this.codec = codec;
     this.logger = InternalLoggerFactory.getInstance(EventBusClient.class);
   }
 
@@ -150,8 +178,8 @@ public class EventBusClient {
                                                               send(codec.encode(msg));
                                                             }
                                                           },
-            EventBusClient.this.eventBusClientOptions.getPingInterval(),
-            EventBusClient.this.eventBusClientOptions.getPingInterval(),
+            EventBusClient.this.options.getPingInterval(),
+            EventBusClient.this.options.getPingInterval(),
             TimeUnit.MILLISECONDS);
           connected = true;
           reconnectTries = 0;
@@ -205,11 +233,11 @@ public class EventBusClient {
       return;
     }
 
-    String host = EventBusClient.this.eventBusClientOptions.getHost();
-    Integer port = EventBusClient.this.eventBusClientOptions.getPort();
+    String host = EventBusClient.this.options.getHost();
+    Integer port = EventBusClient.this.options.getPort();
 
-    if (EventBusClient.this.eventBusClientOptions.getProxyHost() != null) {
-      logger.info("Connecting to bridge at " + host + ":" + port + " (via " + EventBusClient.this.eventBusClientOptions.getProxyHost() + ") using " + this.transport.getClass().getSimpleName() + "...");
+    if (EventBusClient.this.options.getProxyHost() != null) {
+      logger.info("Connecting to bridge at " + host + ":" + port + " (via " + EventBusClient.this.options.getProxyHost() + ") using " + this.transport.getClass().getSimpleName() + "...");
     } else {
       logger.info("Connecting to bridge at " + host + ":" + port + " using " + this.transport.getClass().getSimpleName() + "...");
     }
@@ -232,11 +260,11 @@ public class EventBusClient {
 
     if (!closed &&
       reconnectFuture == null &&
-      EventBusClient.this.eventBusClientOptions.isAutoReconnect() &&
-      (EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries() == 0 ||
-        reconnectTries < EventBusClient.this.eventBusClientOptions.getMaxAutoReconnectTries())) {
+      EventBusClient.this.options.isAutoReconnect() &&
+      (EventBusClient.this.options.getMaxAutoReconnectTries() == 0 ||
+        reconnectTries < EventBusClient.this.options.getMaxAutoReconnectTries())) {
       ++reconnectTries;
-      int interval = EventBusClient.this.eventBusClientOptions.getAutoReconnectInterval();
+      int interval = EventBusClient.this.options.getAutoReconnectInterval();
       logger.info("Auto reconnecting in " + interval + "ms (try number " + reconnectTries + ")...");
       reconnectFuture = group.next().schedule(new Runnable() {
         @Override

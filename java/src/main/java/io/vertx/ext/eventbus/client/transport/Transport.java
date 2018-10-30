@@ -12,14 +12,12 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.vertx.ext.eventbus.client.EventBusClient;
-import io.vertx.ext.eventbus.client.EventBusClientOptions;
-import io.vertx.ext.eventbus.client.Handler;
-import io.vertx.ext.eventbus.client.ProxyType;
+import io.vertx.ext.eventbus.client.*;
 
 import javax.net.ssl.*;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.KeyStore;
@@ -30,8 +28,9 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class Transport extends ChannelInitializer {
 
-  protected final EventBusClientOptions options;
-  protected final InternalLogger logger;
+  final EventBusClientOptions options;
+  private final InternalLogger logger;
+  private final SslContext sslContext;
 
   Handler<Void> connectedHandler;
   Handler<String> messageHandler;
@@ -40,8 +39,59 @@ public abstract class Transport extends ChannelInitializer {
   private Handler<Throwable> exceptionHandler;
 
   Transport(EventBusClientOptions options) {
+
+    SslContext sslContext;
+    try {
+      sslContext = build(options);
+    } catch (Exception e) {
+      throw new ClientException(e);
+    }
+
     this.options = options;
     this.logger = InternalLoggerFactory.getInstance(Transport.class);
+    this.sslContext = sslContext;
+  }
+
+  private static SslContext build(EventBusClientOptions options) throws Exception {
+    SslContextBuilder builder = SslContextBuilder.forClient();
+    if (options.isTrustAll()) {
+      builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
+    } else if (options.getStorePath() != null) {
+
+      String storePath = options.getStorePath();
+      InputStream storeIS = null;
+      if (storePath != null) {
+        File f = new File(storePath);
+        if (f.exists() && f.isFile()) {
+          // Ok
+          storeIS = new FileInputStream(f);
+        } else {
+          storeIS= Thread.currentThread().getContextClassLoader().getResourceAsStream(storePath);
+        }
+      }
+      if (storeIS == null) {
+        throw new IllegalArgumentException("Store file not found:" + storePath);
+      }
+      if ("pem".equals(options.getStoreType())) {
+        builder.trustManager(storeIS);
+      } else {
+        KeyStore keyStore;
+        if ("jks".equals(options.getStoreType())) {
+          keyStore = KeyStore.getInstance("jks");
+        } else {
+          keyStore = KeyStore.getInstance("pkcs12");
+        }
+        if (options.getStorePassword() != null) {
+          keyStore.load(storeIS, options.getStorePassword().toCharArray());
+        } else {
+          keyStore.load(storeIS, null);
+        }
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(keyStore);
+        builder.trustManager(trustManagerFactory);
+      }
+    }
+    return builder.build();
   }
 
   /**
@@ -115,45 +165,14 @@ public abstract class Transport extends ChannelInitializer {
       });
     }
 
-    SslContextBuilder builder = SslContextBuilder.forClient();
-
     if (this.options.isSsl()) {
       SSLParameters sslParams = new SSLParameters();
-
-      if (this.options.isTrustAll()) {
-        builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
-      } else if (this.options.getStorePath() != null) {
-        if ("pem".equals(this.options.getStoreType())) {
-          builder.trustManager(new File(this.options.getStorePath()));
-        } else {
-          KeyStore keyStore;
-          if ("jks".equals(this.options.getStoreType())) {
-            keyStore = KeyStore.getInstance("jks");
-          } else {
-            keyStore = KeyStore.getInstance("pkcs12");
-          }
-          if (this.options.getStorePassword() != null) {
-            keyStore.load(new FileInputStream(this.options.getStorePath()), this.options.getStorePassword().toCharArray());
-          } else {
-            keyStore.load(new FileInputStream(this.options.getStorePath()), null);
-          }
-          TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-          trustManagerFactory.init(keyStore);
-          builder.trustManager(trustManagerFactory);
-        }
-        if (this.options.isVerifyHost()) {
-          sslParams.setEndpointIdentificationAlgorithm("HTTPS");
-        }
+      if (options.isVerifyHost()) {
+        sslParams.setEndpointIdentificationAlgorithm("HTTPS");
       }
-
-      SslContext sctx = builder.build();
-
-      // SSLContext clientContext = SSLContext.getInstance("TLS");
-      // clientContext.init(null, trustManagerFactory == null ? null : trustManagerFactory.getTrustManagers(), new SecureRandom());
-      SSLEngine sslEngine = sctx.newEngine(channel.alloc(), this.options.getHost(), this.options.getPort());
+      SSLEngine sslEngine = sslContext.newEngine(channel.alloc(), this.options.getHost(), this.options.getPort());
       sslEngine.setUseClientMode(true);
       sslEngine.setSSLParameters(sslParams);
-
       SslHandler sslHandler = new SslHandler(sslEngine, false);
       sslHandler.handshakeFuture().addListener(new GenericFutureListener<Future<Channel>>() {
         @Override

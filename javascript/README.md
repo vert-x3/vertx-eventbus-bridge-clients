@@ -1,4 +1,4 @@
-# SockJS Event Bus bridge for Vert.x 3
+# SockJS Event Bus bridge for Vert.x
 
 The `vertx-eventbus.js` file is a SockJS-based event bus bridge to connect your JavaScript frontend application to Vert
 .x 3.x. You can use it in a front-end application or in a node.js application.
@@ -10,13 +10,13 @@ If you already use a previous version of the bridge, please check the changelog 
 The file is delivered as an NPM that you can download it using:
 
 ```
-npm install --save vertx4-eventbus-client
+npm install --save @vertx/eventbus-bridge-client.js
 ```
 
 The dependency is:
 
 ```
-"vertx4-eventbus-client": "1.0.0"
+"@vertx/eventbus-bridge-client.js": "1.0.0"
 ```
 
 More information on:
@@ -26,6 +26,9 @@ More information on:
 
 ## Changelog
 
-1.0.0 -
+### 1.0.0-2
+* Fixed README
+
+### 1.0.0-1 - 2020-10-28
 
 * New artifact name.

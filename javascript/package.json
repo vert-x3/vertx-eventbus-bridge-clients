@@ -1,5 +1,5 @@
 {
-  "name": "vertx4-eventbus-client",
+  "name": "@vertx/eventbus-bridge-client.js",
   "author": "The Vert.x Team",
   "version": "1.0.0",
   "keywords": ["websockets", "websocket", "sockjs", "eventbus", "vert.x"],
@@ -7,12 +7,12 @@
     "type": "git",
     "url": "git@github.com:vert-x3/vertx-eventbus-bridge-clients.git"
   },
-  "main": "./vertx-eventbus.js",
+  "main": "vertx-eventbus.js",
   "homepage": "http://vertx.io",
-  "description": "Vert.x 3 Event Bus Client as NPM",
+  "description": "Vert.x Event Bus Bridge Client",
   "license": "Apache-2.0",
   "files": [
-    "lib/vertx-eventbus.js",
+    "vertx-eventbus.js",
     "README.md"
   ],
   "dependencies": {

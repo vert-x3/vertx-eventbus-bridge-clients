@@ -24,6 +24,21 @@ More information on:
 * The [vert.x web site](http://vertx.io) 
 * The [Event Bus Bridge documentation](http://vertx.io/docs/vertx-web/java/#_sockjs_event_bus_bridge) 
 
+## Releasing to webjars.org
+
+**WebJar**
+
+1. Go to https://www.webjars.org/
+2. Click on _Add a webjar_
+3. In the dialog, select `NPM` as WebJar Type
+4. Enter `@vertx/eventbus-bridge-client.js` in the NPM name text area
+4. Select the new version
+5. Click on _Deploy_
+6. Wait and check log
+
+The sync takes some time, so you will need to check later. The log should end with "Syncing to Maven Central (this could take a while)" - or something similar.
+
+
 ## Changelog
 
 ### 1.0.0-2

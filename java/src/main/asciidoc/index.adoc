@@ -1,25 +1,119 @@
-=== Test
+= Vert.x EventBus Client
 
-==== Send
+Vert.x EventBus Client is a Java client allowing applications to interact with a Vert.x EventBus bridge
+via either TCP or WebSocket transport. After connection, it allows:
+
+* Sending messages to an address of the EventBus.
+* Sending messages to an address of the EventBus and expect a reply.
+* Publishing messages to an address of the EventBus.
+* Creating a consumer and register it against an address.
+* Unregistering a consumer from its address.
+
+Under the hood, the packets sent to server follow the protocol defined in link:https://vertx.io/docs/vertx-tcp-eventbus-bridge/java/[Vert.x EventBus TCP bridge].
+
+NOTE: This client does not need Vert.x to work.
+
+== Using Vert.x Event Bus Client
+
+To use this project, add the following dependency to the _dependencies_ section of your build descriptor:
+
+* Maven (in your `pom.xml`):
+
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>io.vertx</groupId>
+  <artifactId>vertx-eventbus-client</artifactId>
+  <version>${maven.version}</version>
+</dependency>
+----
+
+* Gradle (in your `build.gradle` file):
+
+[source,groovy,subs="+attributes"]
+----
+compile 'io.vertx:vertx-eventbus-client:${maven.version}'
+----
+
+== Creating the Vert.x EventBus Client
+
+There are 2 ways to create a Vert.x EventBus client, depending on what type of the bridge to interact with:
+
+=== Create a TCP event bus bridge client
+
+```
+{@link examples.ClientExamples#exampleTCPCreate}
+```
+
+This example can be used to create a client to connect to a link:https://vertx.io/docs/vertx-tcp-eventbus-bridge/java/[Vert.x EventBus TCP bridge].
+
+With default options, the client will connect to `localhost:7000` via plain TCP. It is also possible to configure the client
+to connect to different host and port with TLS/SSL enabled for security TCP connections.
+
+=== Create a WebSocket SockJS bridge client
+
+```
+{@link examples.ClientExamples#exampleWebSocketCreate}
+```
+This example can be used to create a client to connect to a link:https://vertx.io/docs/vertx-web/java/#_sockjs_event_bus_bridge[SockJS EventBus Bridge] using WebSocket.
+
+With default options, the client will connect to `http://localhost/eventbus/websocket` using WebSocket. It is also possible
+to connect to different host and port with TLS/SSL enabled for security HTTP connections. `options.setWebsocketPath("/eventbus/message")`
+can be used to specify the WebSocket path corresponding to the one specified in the SockJS bridge.
+
+== Communicate with the EventBus Bridge
+
+No matter what type of the bridge it connects to, after connection, the client can be used to communicate with the bridge in the following ways:
+
+NOTE: Any of the following method leads to connection automatically if no connection established yet.
+NOTE: All message body sent to the bridge are encoded to a String(defaults to `GsonCodec` implementation).
+
+=== Sending messages to an address of the EventBus
+
+Messages can be sent to an address of the EventBus.
 
 ```
 {@link examples.ClientExamples#example01}
 ```
 
-==== Request/reply
+=== Sending messages to an address of the EventBus and expect a reply
+
+Messages can be sent to an address of the EventBus with an expected reply handler specified.
 
 ```
 {@link examples.ClientExamples#example02}
 ```
 
-==== Publish
+=== Publishing messages to an address of the EventBus
+
+Messages can be published to an address of the EventBus.
 
 ```
 {@link examples.ClientExamples#example03}
 ```
 
-==== Consuming
+=== Creating a consumer and register it against an address
+
+It is possible to create a consumer and register it on an address of the EventBus, it will be called
+when there are any messages sent to that address.
 
 ```
 {@link examples.ClientExamples#example04}
 ```
+
+=== Unregistering a consumer from its address
+
+It is possible to unregister the consumer from its address if it does not need to listen on that anymore.
+
+```
+{@link examples.ClientExamples#example05}
+```
+
+== Closing the Client
+
+The EventBusClient can be closed to release the connection to the bridge server.
+
+```
+{@link examples.ClientExamples#example06}
+```
+

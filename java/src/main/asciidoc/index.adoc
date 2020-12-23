@@ -117,3 +117,40 @@ The EventBusClient can be closed to release the connection to the bridge server.
 {@link examples.ClientExamples#example06}
 ```
 
+== EventBus Client Options
+
+There are 2 main options in Vert.x EventBus Client, they are:
+
+=== EventBusClientOptions
+
+The `EventBusClientOptions` is used to configure the EventBusClient during creation, it has the following properties:
+
+* `host`: String, the host of the bridge to connect to, defaults to `localhost`.
+* `port`: int, the port of the bridge to connect to, defaults to `-1`, which means `7000` for TCP bridge and `80` for WebSocket SockJS bridge.
+* `websocketPath`: String, the path connect the WebSocket client to, defaults to `/eventbus/websocket`. It is used only by the WebSocket EventBus Client.
+* `websocketMaxWebsocketFrameSize`: int, the maximum websocket frame size, defaults to `65536`. It is used only by the WebSocket EventBus Client.
+* `ssl`: boolean, indicates if SSL is enabled, defaults to `false`, which means SSL is not enabled.
+* `trustStorePath`: String, the path of the trust store. It is used only when `ssl` is true.
+* `trustStorePassword`: String, the password of the trust store. It is used only when `ssl` is true.
+* `trustStoreType`: String, the trust store type, one of `jks`, `pfx`, `pem`, defaults to `jks`. It is used only when `ssl` is true.
+* `verifyHost`: boolean, if hostname verification (for SSL/TLS) is enabled, defaults to `true`. It is used only when `ssl` is true.
+* `trustAll`: boolean, if all servers (SSL/TLS) should be trusted, defaults to `false`. It is used only when `ssl` is true.
+* `pingInterval`: int, ping interval, in milliseconds, defaults to `5000` ms.
+* `autoReconnectInterval`: int, the length of the pause between auto reconnect tries, in milliseconds, defaults to `3000` ms.
+* `maxAutoReconnectTries`: int, the maximum number of auto reconnect tries, defaults to `0`, which means no limit.
+* `connectTimeout`: int, the connect timeout, in milliseconds, defaults to `60000` ms.
+* `idleTimeout`: int, the idle timeout, in milliseconds, defaults to `0` which means no timeout.
+* `autoReconnect`: boolean, whether auto reconnects is enabled, even if the client does not try to send a message, defaults to `true`.
+* `proxyHost`: String, the proxy host.
+* `proxyPort`: int, the proxy port.
+* `proxyUsername`: String, the proxy username if the proxy requires authentication.
+* `proxyPassword`: String, the proxy password if the proxy requires authentication.
+* `proxyType`: ProxyType, one of `ProxyType.HTTP`, `ProxyType.SOCKS4`, `ProxyType.SOCKS5`.
+
+=== DeliveryOptions
+
+`DeliveryOptions` is used when sending messages to the bridge, it has following properties:
+
+* `timeout`: long, the send timeout, in milliseconds, defaults to `30 * 1000` ms. If there is no response received within the timeout the handler will be called with a failure.
+* `headers`: Map, the headers sent to the bridge EventBus.
+

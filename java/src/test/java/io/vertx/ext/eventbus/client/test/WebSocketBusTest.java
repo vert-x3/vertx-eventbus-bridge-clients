@@ -102,18 +102,25 @@ public class WebSocketBusTest extends TcpBusTest {
   }
 
   // This test is blocked by netty issue https://github.com/netty/netty/issues/5070
-  /*
+  // fixed by upgrading netty to 4.1.49.Final
   @Test
   public void testProxyHttpSsl(final TestContext ctx) {
     final Async async = ctx.async();
-    setUpProxy();
+
+    baseOptions
+      .setPort(7001)
+      .setAutoReconnect(false)
+      .setSsl(true)
+      .setTrustAll(true)
+      .setVerifyHost(false)
+      .setProxyType(ProxyType.HTTP)
+      .setProxyHost("localhost")
+      .setProxyPort(8000);
+
     EventBusClient client = client(ctx);
 
-    ctx.<EventBusClientOptions>get("clientOptions").setPort(7001).setSsl(true).setTrustAll(true).setVerifyHost(false).setAutoReconnect(false)
-                                                   .setProxyOptions(new ProxyOptions(ProxyType.HTTP, "localhost", 8000));
-
     performHelloWorld(ctx, async, client);
-  }*/
+  }
 
   @Test
   public void testProxyHttp(final TestContext ctx) {

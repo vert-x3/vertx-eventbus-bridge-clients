@@ -14,7 +14,7 @@ import io.vertx.ext.eventbus.client.json.JsonCodec;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.sockjs.BridgeOptions;
+import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import org.junit.*;
 import org.littleshoot.proxy.HttpProxyServer;
@@ -58,17 +58,18 @@ public class WebSocketBusTest extends TcpBusTest {
   @Override
   protected void setUpBridges(TestContext ctx) {
     Router router = Router.router(vertx);
-    BridgeOptions opts = new BridgeOptions()
+    SockJSBridgeOptions opts = new SockJSBridgeOptions()
       .setPingTimeout(15000)
       .addInboundPermitted(new PermittedOptions().setAddressRegex(".*"))
       .addOutboundPermitted(new PermittedOptions().setAddressRegex(".*"));
-    SockJSHandler ebHandler = SockJSHandler.create(vertx).bridge(opts);
-    router.route("/eventbus-test/*").handler(ebHandler);
-    HttpServer server = vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebsocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE))
+    SockJSHandler ebHandler = SockJSHandler.create(vertx);
+    Router bridgeRouter = ebHandler.bridge(opts);
+    router.mountSubRouter("/eventbus-test/", bridgeRouter);
+    HttpServer server = vertx.createHttpServer(new HttpServerOptions().setMaxWebSocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebSocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE))
       .requestHandler(router::accept)
       .listen(7000, ctx.asyncAssertSuccess());
 
-    vertx.createHttpServer(new HttpServerOptions().setMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebsocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE).setSsl(true).setKeyStoreOptions(
+    vertx.createHttpServer(new HttpServerOptions().setMaxWebSocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebSocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE).setSsl(true).setKeyStoreOptions(
       new JksOptions().setPath("server-keystore.jks").setPassword("wibble")
     ))
       .requestHandler(router::accept)

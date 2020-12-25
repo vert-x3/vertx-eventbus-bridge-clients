@@ -7,15 +7,13 @@ import io.vertx.ext.unit.TestContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.net.UnknownHostException;
-
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class WebSocketJacksonBusTest extends WebSocketBusTest {
 
   @BeforeClass
-  public static void beforeClass() throws UnknownHostException {
+  public static void beforeClass() throws Exception {
     WebSocketBusTest.beforeClass();
   }
 

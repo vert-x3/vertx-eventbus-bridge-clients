@@ -13,11 +13,10 @@ import io.vertx.ext.eventbus.client.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.test.core.SocksProxy;
+import io.vertx.test.proxy.SocksProxy;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,10 +33,9 @@ public class TcpBusTest {
   Vertx vertx;
 
   @BeforeClass
-  public static void beforeClass() throws UnknownHostException {
+  public static void beforeClass() throws Exception {
     socksProxy = new SocksProxy("vertx-user");
-    socksProxy.start(Vertx.vertx(), v -> {
-    });
+    socksProxy.start(Vertx.vertx());
   }
 
   @AfterClass

@@ -20,7 +20,6 @@ import org.junit.*;
 import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +34,7 @@ public class WebSocketBusTest extends TcpBusTest {
   private static int MAX_WEBSOCKET_FRAME_SIZE = 1024 * 1024;
 
   @BeforeClass
-  public static void beforeClass() throws UnknownHostException {
+  public static void beforeClass() throws Exception {
     TcpBusTest.beforeClass();
     httpProxy = DefaultHttpProxyServer.bootstrap().withPort(8000).withAllowLocalOnly(true).start();
   }

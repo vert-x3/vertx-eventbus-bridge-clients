@@ -27,7 +27,7 @@ public class ClientExamples {
 
   public void exampleWebSocketCreate() {
     // Create a bug client with default options that will connect to http://localhost:80/eventbus/websocket via WebSocket
-    EventBusClient webSocketEventBusClient = EventBusClient.websocket();
+    EventBusClient webSocketEventBusClient = EventBusClient.webSocket();
 
     // Create a bus client with specified host and port, TLS enabled and WebSocket path.
     EventBusClientOptions options = new EventBusClientOptions()
@@ -35,9 +35,9 @@ public class ClientExamples {
       .setSsl(true)
       .setTrustStorePath("/path/to/store.jks")
       .setTrustStorePassword("change-it")
-      .setWebsocketPath("/eventbus/message")
+      .setWebSocketPath("/eventbus/message")
       ;
-    EventBusClient sslWebSocketEventBusClient = EventBusClient.websocket(options);
+    EventBusClient sslWebSocketEventBusClient = EventBusClient.webSocket(options);
 
   }
 

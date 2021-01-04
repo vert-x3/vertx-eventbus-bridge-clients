@@ -99,8 +99,8 @@ public class EventBusClientOptions {
   private String proxyPassword;
   private ProxyType proxyType;
 
-  private String websocketPath;
-  private int websocketMaxWebsocketFrameSize;
+  private String webSocketPath;
+  private int maxWebSocketFrameSize;
 
   /**
    * Default constructor
@@ -117,8 +117,8 @@ public class EventBusClientOptions {
     this.autoReconnect = DEFAULT_AUTO_RECONNECT;
     this.autoReconnectInterval = DEFAULT_AUTO_RECONNECT_INTERVAL;
     this.maxAutoReconnectTries = DEFAULT_MAX_AUTO_RECONNECT_TRIES;
-    this.websocketPath = EventBusClientOptions.DEFAULT_WEBSOCKET_PATH;
-    this.websocketMaxWebsocketFrameSize = EventBusClientOptions.DEFAULT_MAX_WEBSOCKET_FRAME_SIZE;
+    this.webSocketPath = EventBusClientOptions.DEFAULT_WEBSOCKET_PATH;
+    this.maxWebSocketFrameSize = EventBusClientOptions.DEFAULT_MAX_WEBSOCKET_FRAME_SIZE;
   }
 
   /**
@@ -144,8 +144,8 @@ public class EventBusClientOptions {
     this.proxyType = options.proxyType;
     this.proxyPassword = options.proxyPassword;
     this.proxyUsername = options.proxyUsername;
-    this.websocketPath = options.websocketPath;
-    this.websocketMaxWebsocketFrameSize = options.websocketMaxWebsocketFrameSize;
+    this.webSocketPath = options.webSocketPath;
+    this.maxWebSocketFrameSize = options.maxWebSocketFrameSize;
   }
 
   /**
@@ -397,11 +397,11 @@ public class EventBusClientOptions {
   /**
    * Set the path to connect the WebSocket client to
    *
-   * @param websocketPath the storePath
+   * @param webSocketPath the storePath
    * @return a reference to this, so the API can be used fluently
    */
-  public EventBusClientOptions setWebsocketPath(String websocketPath) {
-    this.websocketPath = websocketPath;
+  public EventBusClientOptions setWebSocketPath(String webSocketPath) {
+    this.webSocketPath = webSocketPath;
     return this;
   }
 
@@ -410,8 +410,8 @@ public class EventBusClientOptions {
    *
    * @return the storePath
    */
-  public String getWebsocketPath() {
-    return this.websocketPath;
+  public String getWebSocketPath() {
+    return this.webSocketPath;
   }
 
   /**
@@ -419,8 +419,8 @@ public class EventBusClientOptions {
    *
    * @return the max websocket framesize
    */
-  public int getWebsocketMaxWebsocketFrameSize() {
-    return this.websocketMaxWebsocketFrameSize;
+  public int getMaxWebSocketFrameSize() {
+    return this.maxWebSocketFrameSize;
   }
 
   /**
@@ -429,8 +429,8 @@ public class EventBusClientOptions {
    * @param websocketMaxWebsocketFrameSize the max frame size, in bytes
    * @return a reference to this, so the API can be used fluently
    */
-  public EventBusClientOptions setWebsocketMaxWebsocketFrameSize(int websocketMaxWebsocketFrameSize) {
-    this.websocketMaxWebsocketFrameSize = websocketMaxWebsocketFrameSize;
+  public EventBusClientOptions setMaxWebSocketFrameSize(int websocketMaxWebsocketFrameSize) {
+    this.maxWebSocketFrameSize = websocketMaxWebsocketFrameSize;
     return this;
   }
 

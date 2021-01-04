@@ -68,8 +68,8 @@ public class EventBusClient {
    *
    * @return the bus client
    */
-  public static EventBusClient websocket() {
-    return EventBusClient.websocket(new EventBusClientOptions(), new GsonCodec());
+  public static EventBusClient webSocket() {
+    return EventBusClient.webSocket(new EventBusClientOptions(), new GsonCodec());
   }
 
   /**
@@ -79,8 +79,8 @@ public class EventBusClient {
    * @param codec the json codec
    * @return the bus client
    */
-  public static EventBusClient websocket(JsonCodec codec) {
-    return EventBusClient.websocket(new EventBusClientOptions(), codec);
+  public static EventBusClient webSocket(JsonCodec codec) {
+    return EventBusClient.webSocket(new EventBusClientOptions(), codec);
   }
 
   /**
@@ -89,8 +89,8 @@ public class EventBusClient {
    * @param options the {@code EventBusClient} options
    * @return the bus client
    */
-  public static EventBusClient websocket(EventBusClientOptions options) {
-    return EventBusClient.websocket(options, new GsonCodec());
+  public static EventBusClient webSocket(EventBusClientOptions options) {
+    return EventBusClient.webSocket(options, new GsonCodec());
   }
 
   /**
@@ -100,7 +100,7 @@ public class EventBusClient {
    * @param codec   the JSON codec to use
    * @return the bus client
    */
-  public static EventBusClient websocket(EventBusClientOptions options, JsonCodec codec) {
+  public static EventBusClient webSocket(EventBusClientOptions options, JsonCodec codec) {
     options = new EventBusClientOptions(options);
     if (options.getPort() == -1) {
       options.setPort(80);

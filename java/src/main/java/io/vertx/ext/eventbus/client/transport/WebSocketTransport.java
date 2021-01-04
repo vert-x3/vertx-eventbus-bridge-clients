@@ -46,7 +46,7 @@ public class WebSocketTransport extends Transport {
     if (this.options.isSsl()) {
       url.append("s");
     }
-    url.append("://").append(this.options.getHost()).append(options.getWebsocketPath());
+    url.append("://").append(this.options.getHost()).append(options.getWebSocketPath());
 
     WebSocketClientHandshaker handshaker =
       WebSocketClientHandshakerFactory.newHandshaker(new URI(url.toString()),
@@ -54,7 +54,7 @@ public class WebSocketTransport extends Transport {
         null,
         false,
         new DefaultHttpHeaders(),
-        options.getWebsocketMaxWebsocketFrameSize());
+        options.getMaxWebSocketFrameSize());
     WebSocketClientProtocolHandler handler = new WebSocketClientProtocolHandler(handshaker);
 
     ChannelPipeline pipeline = channel.pipeline();

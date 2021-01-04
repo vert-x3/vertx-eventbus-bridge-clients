@@ -50,8 +50,8 @@ public class WebSocketBusTest extends TcpBusTest {
     super.before(ctx);
     baseOptions = new EventBusClientOptions()
       .setPort(7000)
-      .setWebsocketPath("/eventbus-test/websocket")
-      .setWebsocketMaxWebsocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE);
+      .setWebSocketPath("/eventbus-test/websocket")
+      .setMaxWebSocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE);
   }
 
   @Override
@@ -98,7 +98,7 @@ public class WebSocketBusTest extends TcpBusTest {
   @Override
   protected EventBusClient client(TestContext ctx) {
     ctx.put("codec", new GsonCodec());
-    return EventBusClient.websocket(baseOptions);
+    return EventBusClient.webSocket(baseOptions);
   }
 
   // This test is blocked by netty issue https://github.com/netty/netty/issues/5070

@@ -118,7 +118,7 @@ public class EventBusClient {
   private final JsonCodec codec;
   private InternalLogger logger;
 
-  private final ConcurrentMap<String, HandlerList> consumerMap = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, HandlerList> consumerMap = new ConcurrentHashMap<String, HandlerList>();
   private ScheduledFuture<?> pingPeriodic;
   private ChannelFuture connectFuture;
   private Channel channel;
@@ -140,7 +140,7 @@ public class EventBusClient {
     this.logger = InternalLoggerFactory.getInstance(EventBusClient.class);
   }
 
-  private ArrayDeque<Handler<Transport>> pendingTasks = new ArrayDeque<>();
+  private ArrayDeque<Handler<Transport>> pendingTasks = new ArrayDeque<Handler<Transport>>();
 
   private synchronized void execute(Handler<Transport> task) {
     if (connected) {
@@ -296,43 +296,38 @@ public class EventBusClient {
   private void handleMsg(Map msg) {
     String type = (String) msg.get("type");
     if (type != null) {
-      switch (type) {
-        case "message":
-        case "rec": {
-          String address = (String) msg.get("address");
-          if (address == null) {
-            // TCP bridge that replies an error...
-            return;
-          }
-          logger.info("Received message for address: " + address);
-          HandlerList consumers = consumerMap.get(address);
-          if (consumers != null) {
-            Map body = (Map) msg.get("body");
-            Map<String, String> headers;
-            Map msgHeaders = (Map) msg.get("headers");
-            if (msgHeaders == null) {
-              headers = Collections.emptyMap();
-            } else {
-              headers = (Map<String, String>) msgHeaders;
-            }
-            String replyAddress = (String) msg.get("replyAddress");
-            consumers.send(new Message(this, address, headers, body, replyAddress));
-          }
-          break;
+      if ("message".equals(type) || "rec".equals(type)) {
+        String address = (String) msg.get("address");
+        if (address == null) {
+          // TCP bridge that replies an error...
+          return;
         }
-        case "err": {
-          String address = (String) msg.get("address");
-          String message = (String) msg.get("message");
+        logger.info("Received message for address: " + address);
+        HandlerList consumers = consumerMap.get(address);
+        if (consumers != null) {
+          Map body = (Map) msg.get("body");
+          Map<String, String> headers;
+          Map msgHeaders = (Map) msg.get("headers");
+          if (msgHeaders == null) {
+            headers = Collections.emptyMap();
+          } else {
+            headers = (Map<String, String>) msgHeaders;
+          }
+          String replyAddress = (String) msg.get("replyAddress");
+          consumers.send(new Message(this, address, headers, body, replyAddress));
+        }
+      } else if ("err".equals(type)) {
+        String address = (String) msg.get("address");
+        String message = (String) msg.get("message");
 //          int failureCode = msg.get("failureCode").getAsInt();
 //          String failureType = msg.get("failureType").getAsString();
-          if (address == null) {
-            logger.info("Received error without address present, probably the address was not found: " + message);
-            return;
-          }
-          HandlerList consumers = consumerMap.get(address);
-          if (consumers != null) {
-            consumers.fail(new RuntimeException(message));
-          }
+        if (address == null) {
+          logger.info("Received error without address present, probably the address was not found: " + message);
+          return;
+        }
+        HandlerList consumers = consumerMap.get(address);
+        if (consumers != null) {
+          consumers.fail(new RuntimeException(message));
         }
       }
     }
@@ -515,7 +510,7 @@ public class EventBusClient {
    * @return the event bus message consumer
    */
   public <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler) {
-    MessageConsumer<T> consumer = new MessageConsumer<>(this, address, handler);
+    MessageConsumer<T> consumer = new MessageConsumer<T>(this, address, handler);
     register(consumer.handler, this.defaultOptions == null ? null : this.defaultOptions.getHeaders(), true);
     return consumer;
   }
@@ -538,9 +533,9 @@ public class EventBusClient {
           }
         }
       } else {
-        ArrayList<MessageHandler> tmp = new ArrayList<>(consumers.handlers);
+        ArrayList<MessageHandler> tmp = new ArrayList<MessageHandler>(consumers.handlers);
         tmp.add(handler);
-        handlers = new ArrayList<>(tmp);
+        handlers = new ArrayList<MessageHandler>(tmp);
       }
       consumerMap.put(address, new HandlerList(handlers, atServer));
     }
@@ -556,17 +551,17 @@ public class EventBusClient {
       if (!consumers.handlers.contains(handler)) {
         return;
       }
-      List<MessageHandler> handlers = new ArrayList<>(consumers.handlers);
+      List<MessageHandler> handlers = new ArrayList<MessageHandler>(consumers.handlers);
       handlers.remove(handler);
       if (atServer && handlers.isEmpty()) {
         consumerMap.remove(address);
-        Map<String, Object> obj = new HashMap<>();
+        Map<String, Object> obj = new HashMap<String, Object>();
         obj.put("type", "unregister");
         obj.put("address", address);
         final String msg = codec.encode(obj);
         send(msg);
       } else {
-        consumerMap.put(address, new HandlerList(new ArrayList<>(handlers), atServer));
+        consumerMap.put(address, new HandlerList(new ArrayList<MessageHandler>(handlers), atServer));
       }
     }
   }
@@ -623,7 +618,7 @@ public class EventBusClient {
   }
 
   private void send(String type, String address, Object body, Map<String, String> headers, String replyAddress) {
-    Map<String, Object> obj = new HashMap<>();
+    Map<String, Object> obj = new HashMap<String, Object>();
     obj.put("type", type);
     obj.put("address", address);
     if (replyAddress != null) {

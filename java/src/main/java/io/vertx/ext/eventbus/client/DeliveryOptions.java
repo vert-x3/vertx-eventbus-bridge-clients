@@ -51,7 +51,7 @@ public class DeliveryOptions {
    */
   public DeliveryOptions addHeader(String key, String value) {
     if (headers == null) {
-      headers = new HashMap<>();
+      headers = new HashMap<String, String>();
     }
     headers.put(key, value);
     return this;

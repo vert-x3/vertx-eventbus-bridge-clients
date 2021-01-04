@@ -80,7 +80,12 @@ public class ClientExamples {
 
   public void example06(EventBusClient busClient) {
     // Specify the close handler to the EventBusClient
-    busClient.closeHandler(v -> System.out.println("Bus Client Closed"));
+    busClient.closeHandler(new Handler<Void>() {
+      @Override
+      public void handle(Void event) {
+        System.out.println("Bus Client Closed");
+      }
+    });
     // Closes the connection to the bridge server if it is open
     busClient.close();
 

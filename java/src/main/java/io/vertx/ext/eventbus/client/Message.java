@@ -51,17 +51,17 @@ public class Message<T> {
     client.send(replyAddress, body, options);
   }
 
-  public <R> void reply(Object body, Handler<AsyncResult<Message<R>>> handler) {
+  public <R> void replyAndRequest(Object body, Handler<AsyncResult<Message<R>>> handler) {
     if (replyAddress == null) {
       throw new IllegalStateException();
     }
-    client.send(replyAddress, body, handler);
+    client.request(replyAddress, body, handler);
   }
 
-  public <R> void reply(Object body, DeliveryOptions options, Handler<AsyncResult<Message<R>>> handler) {
+  public <R> void replyAndRequest(Object body, DeliveryOptions options, Handler<AsyncResult<Message<R>>> handler) {
     if (replyAddress == null) {
       throw new IllegalStateException();
     }
-    client.send(replyAddress, body, options, handler);
+    client.request(replyAddress, body, options, handler);
   }
 }

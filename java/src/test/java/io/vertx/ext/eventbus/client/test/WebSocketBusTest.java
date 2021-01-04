@@ -163,11 +163,11 @@ public class WebSocketBusTest extends TcpBusTest {
       msg.reply(new JsonObject());
     });
 
-    client.send("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", 128), response -> {
+    client.request("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", 128), response -> {
       ctx.assertTrue(response.succeeded(), "Message within MaxWebSocketFrameSize limit should succeed.");
       countDownAndCloseClient(async, client);
     });
-    client.send("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", MAX_WEBSOCKET_FRAME_SIZE - 8), response -> {
+    client.request("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", MAX_WEBSOCKET_FRAME_SIZE - 8), response -> {
       ctx.assertTrue(response.succeeded(), "Message within MaxWebSocketFrameSize limit should succeed.");
       countDownAndCloseClient(async, client);
     });
@@ -196,7 +196,7 @@ public class WebSocketBusTest extends TcpBusTest {
 
     client.connectedHandler(event -> {
 
-      client.send("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", MAX_WEBSOCKET_FRAME_SIZE + 8), response -> {
+      client.request("server_addr", getStringForJsonObjectTargetByteSize(ctx, "server_addr", MAX_WEBSOCKET_FRAME_SIZE + 8), response -> {
         // This will come after 30s, when the request times out, as the SockJS server just drops the connection instead of sending a proper error response
         ctx.assertFalse(response.succeeded(), "Should not be able to send more than MAX_WEBSOCKET_FRAME_SIZE");
       });

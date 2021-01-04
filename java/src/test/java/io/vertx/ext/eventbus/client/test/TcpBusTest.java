@@ -200,7 +200,7 @@ public class TcpBusTest {
       msg.reply(new JsonObject().put("message", "the_response"));
     });
     EventBusClient client = client(ctx);
-    client.send("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
+    client.request("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
       @Override
       public void handle(AsyncResult<Message<Map>> event) {
         ctx.assertTrue(event.succeeded());
@@ -215,7 +215,7 @@ public class TcpBusTest {
   public void testSendError(final TestContext ctx) {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
-    client.send("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
+    client.request("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
       @Override
       public void handle(AsyncResult<Message<Map>> event) {
         ctx.assertTrue(event.failed());
@@ -234,7 +234,7 @@ public class TcpBusTest {
       msg.fail(123, "the_message");
     });
     EventBusClient client = client(ctx);
-    client.send("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
+    client.request("server_addr", Collections.singletonMap("message", "hello"), new Handler<AsyncResult<Message<Map>>>() {
       @Override
       public void handle(AsyncResult<Message<Map>> event) {
         ctx.assertTrue(event.failed());
@@ -253,7 +253,7 @@ public class TcpBusTest {
       msg.reply(Collections.singletonMap("message", "bye"));
     });
     vertx.eventBus().consumer("server_addr", msg -> {
-      vertx.eventBus().send("client_addr", new JsonObject(), ctx.asyncAssertSuccess(reply -> {
+      vertx.eventBus().request("client_addr", new JsonObject(), ctx.asyncAssertSuccess(reply -> {
         ctx.assertEquals(new JsonObject().put("message", "bye"), reply.body());
         client.close();
         async.complete();
@@ -336,7 +336,7 @@ public class TcpBusTest {
         msg.reply(new JsonObject());
       }
     });
-    client.send("server_addr", Collections.emptyMap(), reply -> {
+    client.request("server_addr", Collections.emptyMap(), reply -> {
       throw failure;
     });
   }
@@ -361,7 +361,7 @@ public class TcpBusTest {
       async.countDown();
     });
 
-    client.send("server_addr", Collections.emptyMap(), reply -> {
+    client.request("server_addr", Collections.emptyMap(), reply -> {
 
       client.close();
 
@@ -414,7 +414,7 @@ public class TcpBusTest {
       }
     });
 
-    client.<Map>send("server_addr", Collections.emptyMap(), reply -> {
+    client.<Map>request("server_addr", Collections.emptyMap(), reply -> {
       ctx.assertTrue(reply.succeeded());
       ctx.assertNull(reply.result().body().get("token"));
       countDownAndCloseClient(async, client);
@@ -422,13 +422,13 @@ public class TcpBusTest {
 
     client.setDefaultDeliveryOptions(new DeliveryOptions().addHeader("token", "hello world"));
 
-    client.<Map>send("server_addr", Collections.emptyMap(), reply -> {
+    client.<Map>request("server_addr", Collections.emptyMap(), reply -> {
       ctx.assertTrue(reply.succeeded());
       ctx.assertEquals("hello world", reply.result().body().get("token"));
       countDownAndCloseClient(async, client);
     });
 
-    client.<Map>send("server_addr", Collections.emptyMap(), new DeliveryOptions().addHeader("token", "hello mars"), reply -> {
+    client.<Map>request("server_addr", Collections.emptyMap(), new DeliveryOptions().addHeader("token", "hello mars"), reply -> {
       ctx.assertTrue(reply.succeeded());
       ctx.assertEquals("hello mars", reply.result().body().get("token"));
       countDownAndCloseClient(async, client);
@@ -684,7 +684,7 @@ public class TcpBusTest {
       msg.reply(new JsonObject().put("message", "hello world"));
     });
     client.exceptionHandler(event -> ctx.fail(new Exception("Should not end in exception.", event)));
-    client.<Map>send("server_addr", Collections.emptyMap(), reply -> {
+    client.<Map>request("server_addr", Collections.emptyMap(), reply -> {
       ctx.assertTrue(reply.succeeded());
       ctx.assertEquals("hello world", reply.result().body().get("message"));
       client.close();

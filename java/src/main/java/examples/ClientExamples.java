@@ -51,7 +51,7 @@ public class ClientExamples {
 
   public void example02(EventBusClient busClient) {
     // Send a message to the bus and expect a reply
-    busClient.send("newsfeed", "Breaking news: something great happened", new Handler<AsyncResult<Message<String>>>() {
+    busClient.request("newsfeed", "Breaking news: something great happened", new Handler<AsyncResult<Message<String>>>() {
       @Override
       public void handle(AsyncResult<Message<String>> reply) {
         System.out.println("We got the reply");

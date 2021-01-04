@@ -389,12 +389,13 @@ public class EventBusClient {
    * @return a reference to this, so the API can be used fluently
    */
   public EventBusClient send(String address, Object message) {
-    send(address, message, defaultOptions, null);
+    request(address, message, defaultOptions, null);
     return this;
   }
 
   /**
-   * Sends a message.
+   * Sends a message and and specify a {@code replyHandler} that will be called if the recipient
+   * subsequently replies to the message.
    * <p>
    * The message will be delivered to at most one of the handlers registered to the address.
    *
@@ -402,8 +403,8 @@ public class EventBusClient {
    * @param message the message, may be {@code null}
    * @return a reference to this, so the API can be used fluently
    */
-  public <T> EventBusClient send(String address, Object message, final Handler<AsyncResult<Message<T>>> replyHandler) {
-    return send(address, message, defaultOptions, replyHandler);
+  public <T> EventBusClient request(String address, Object message, final Handler<AsyncResult<Message<T>>> replyHandler) {
+    return request(address, message, defaultOptions, replyHandler);
   }
 
   /**
@@ -415,7 +416,7 @@ public class EventBusClient {
    * @return a reference to this, so the API can be used fluently
    */
   public EventBusClient send(String address, Object message, DeliveryOptions options) {
-    return send(address, message, options, null);
+    return request(address, message, options, null);
   }
 
   /**
@@ -428,7 +429,7 @@ public class EventBusClient {
    * @param replyHandler reply handler will be called when any reply from the recipient is received, may be {@code null}
    * @return a reference to this, so the API can be used fluently
    */
-  public <T> EventBusClient send(String address, Object message, DeliveryOptions options, final Handler<AsyncResult<Message<T>>> replyHandler) {
+  public <T> EventBusClient request(String address, Object message, DeliveryOptions options, final Handler<AsyncResult<Message<T>>> replyHandler) {
     final String replyAddr;
     if (replyHandler != null) {
       final AtomicBoolean registered = new AtomicBoolean(true);

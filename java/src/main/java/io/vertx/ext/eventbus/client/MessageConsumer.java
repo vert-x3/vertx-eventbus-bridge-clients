@@ -21,8 +21,6 @@ public class MessageConsumer<T> {
         return address;
       }
 
-      ;
-
       @Override
       public void handleMessage(Message<T> msg) {
         handler.handle(msg);

@@ -152,7 +152,7 @@ public class EventBusClientOptions {
    * Set the host to connect the client to
    *
    * @param host the host
-   * @return
+   * @return a reference to this, so the API can be used fluently
    */
   public EventBusClientOptions setHost(String host) {
     this.host = host;
@@ -170,7 +170,7 @@ public class EventBusClientOptions {
    * Set the port on to connect the client to
    *
    * @param port the port
-   * @return
+   * @return a reference to this, so the API can be used fluently
    */
   public EventBusClientOptions setPort(int port) {
     this.port = port;

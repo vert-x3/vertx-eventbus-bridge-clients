@@ -108,6 +108,18 @@ public class TcpBusTest {
   }
 
   @Test
+  public void testSendNullBody(final TestContext ctx) {
+    final Async async = ctx.async();
+    EventBusClient client = client(ctx);
+    vertx.eventBus().consumer("server_addr", msg -> {
+      ctx.assertNull(msg.body());
+      client.close();
+      async.complete();
+    });
+    client.send("server_addr", null);
+  }
+
+  @Test
   public void testPublish(final TestContext ctx) {
     int num = 3;
     final Async async = ctx.async(num);
@@ -219,6 +231,8 @@ public class TcpBusTest {
       @Override
       public void handle(AsyncResult<Message<Map>> event) {
         ctx.assertTrue(event.failed());
+        event.cause().printStackTrace();
+        ctx.assertEquals("No handlers for address server_addr", event.cause().getMessage());
         client.close();
         async.complete();
       }
@@ -238,6 +252,8 @@ public class TcpBusTest {
       @Override
       public void handle(AsyncResult<Message<Map>> event) {
         ctx.assertTrue(event.failed());
+        ctx.assertEquals("the_message", event.cause().getMessage());
+        ctx.assertTrue(received.get());
         client.close();
         async.complete();
       }
@@ -249,6 +265,7 @@ public class TcpBusTest {
     final Async async = ctx.async();
     EventBusClient client = client(ctx);
     client.consumer("client_addr", msg -> {
+      ctx.assertTrue(msg.headers().isEmpty());
       ctx.assertNotNull(msg.replyAddress());
       msg.reply(Collections.singletonMap("message", "bye"));
     });

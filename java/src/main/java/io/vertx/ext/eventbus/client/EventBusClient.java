@@ -10,7 +10,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.vertx.ext.eventbus.client.json.GsonCodec;
 import io.vertx.ext.eventbus.client.json.JsonCodec;
 import io.vertx.ext.eventbus.client.transport.TcpTransport;
 import io.vertx.ext.eventbus.client.transport.Transport;
@@ -28,13 +27,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class EventBusClient {
 
+  private static JsonCodec defaultCodecOrDie() {
+    JsonCodec codec = JsonCodec.DEFAULT;
+    if (codec == null) {
+      throw new IllegalStateException("No default codec found, check you added com.google.code.gson:gson or com.fasterxml.jackson.core:jackson-core to the classpath");
+    }
+    return codec;
+  }
+
   /**
    * Creates an {@code EventBusClient} instance to connect to a Vert.x EventBus TCP bridge with default options.
    *
    * @return the bus client
    */
   public static EventBusClient tcp() {
-    return EventBusClient.tcp(new EventBusClientOptions(), new GsonCodec());
+    return EventBusClient.tcp(new EventBusClientOptions(), defaultCodecOrDie());
   }
 
   /**
@@ -44,7 +51,7 @@ public class EventBusClient {
    * @return the bus client
    */
   public static EventBusClient tcp(EventBusClientOptions options) {
-    return EventBusClient.tcp(options, new GsonCodec());
+    return EventBusClient.tcp(options, defaultCodecOrDie());
   }
 
   /**
@@ -69,7 +76,7 @@ public class EventBusClient {
    * @return the bus client
    */
   public static EventBusClient webSocket() {
-    return EventBusClient.webSocket(new EventBusClientOptions(), new GsonCodec());
+    return EventBusClient.webSocket(new EventBusClientOptions(), defaultCodecOrDie());
   }
 
   /**
@@ -90,7 +97,7 @@ public class EventBusClient {
    * @return the bus client
    */
   public static EventBusClient webSocket(EventBusClientOptions options) {
-    return EventBusClient.webSocket(options, new GsonCodec());
+    return EventBusClient.webSocket(options, defaultCodecOrDie());
   }
 
   /**

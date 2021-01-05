@@ -67,8 +67,6 @@ No matter what type of the bridge it connects to, after connection, the client c
 
 NOTE: Any of the following method leads to connect automatically if no connection established yet.
 
-NOTE: The client and the bridge exchange messages in a custom JSON format encoded using `GsonCodec`.
-
 === Sending messages to an address of the EventBus
 
 Messages can be sent to an address of the EventBus.
@@ -117,6 +115,28 @@ The client can be closed to release the connection to the bridge server.
 ```
 {@link examples.ClientExamples#example06}
 ```
+
+== JSON format encoding
+
+The client and the bridge exchange messages in a custom JSON format encoded using an implementation of `JsonCodec`. The
+client ships two `JsonCodec` implementations.
+
+When creating a new `EventBusClient` instance without specifying `JsonCodec`, it tries to load `GsonCodec` first, if Gson
+is not in the classpath, it turns to load `JacksonCodec`, if FasterXML Jackson data-bind is not in classpath either,
+it fails to create the client instance.
+
+User can specify their own implementation of `JsonCodec` when creating a new `EventBusClient` instance as well.
+
+=== GsonCodec
+
+The `JsonCodec` implementation based on link:https://github.com/google/gson[Google Gson project].
+The dependency of `com.google.code.gson:gson` is optional, users need to add this dependency explicitly to use this implementation.
+
+=== JacksonCodec
+
+The `JsonCodec` implementation based on link:https://github.com/FasterXML/jackson-databind[FasterXML Jackson databind].
+The dependency of `com.fasterxml.jackson.core:jackson-databind` is optional, users need to add this dependency explicitly to use this implementation.
+
 
 == EventBus Client Options
 

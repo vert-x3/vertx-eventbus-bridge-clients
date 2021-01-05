@@ -57,6 +57,11 @@ public class DeliveryOptions {
     return this;
   }
 
+  /**
+   * Gets the message headers to be sent with each request.
+   *
+   * @return the headers to be sent with each request.
+   */
   Map<String, String> getHeaders() {
     return headers;
   }

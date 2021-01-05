@@ -11,7 +11,7 @@ via either TCP or WebSocket transport. After connection, it allows:
 
 Under the hood, the packets sent to server follow the protocol defined in link:https://vertx.io/docs/vertx-tcp-eventbus-bridge/java/[Vert.x EventBus TCP bridge].
 
-NOTE: This client does not need Vert.x to work.
+NOTE: This client does not rely on Vert.x and requires a Java 6 runtime, making it embeddable in Android applications.
 
 == Using Vert.x Event Bus Client
 
@@ -58,15 +58,16 @@ to connect to different host and port with TLS/SSL enabled for security TCP conn
 This example can be used to create a client to connect to a link:https://vertx.io/docs/vertx-web/java/#_sockjs_event_bus_bridge[SockJS EventBus Bridge] using WebSocket.
 
 With default options, the client will connect to `http://localhost/eventbus/websocket` using WebSocket. It is also possible
-to connect to different host and port with TLS/SSL enabled for security HTTP connections. `options.setWebsocketPath("/eventbus/message")`
+to connect to different host and port with TLS/SSL enabled for security HTTP connections. `options.setWebSocketPath("/eventbus/message")`
 can be used to specify the WebSocket path corresponding to the one specified in the SockJS bridge.
 
 == Communicate with the EventBus Bridge
 
 No matter what type of the bridge it connects to, after connection, the client can be used to communicate with the bridge in the following ways:
 
-NOTE: Any of the following method leads to connection automatically if no connection established yet.
-NOTE: All message body sent to the bridge are encoded to a String(defaults to `GsonCodec` implementation).
+NOTE: Any of the following method leads to connect automatically if no connection established yet.
+
+NOTE: The client and the bridge exchange messages in a custom JSON format encoded using `GsonCodec`.
 
 === Sending messages to an address of the EventBus
 
@@ -103,7 +104,7 @@ when there are any messages sent to that address.
 
 === Unregistering a consumer from its address
 
-It is possible to unregister the consumer from its address if it does not need to listen on that anymore.
+It is possible to unregister the consumer from its address when it does not need to listen on that anymore.
 
 ```
 {@link examples.ClientExamples#example05}
@@ -111,7 +112,7 @@ It is possible to unregister the consumer from its address if it does not need t
 
 == Closing the Client
 
-The EventBusClient can be closed to release the connection to the bridge server.
+The client can be closed to release the connection to the bridge server.
 
 ```
 {@link examples.ClientExamples#example06}
@@ -119,7 +120,7 @@ The EventBusClient can be closed to release the connection to the bridge server.
 
 == EventBus Client Options
 
-There are 2 main options in Vert.x EventBus Client, they are:
+There are 2 main options in Vert.x EventBus Client.
 
 === EventBusClientOptions
 
@@ -127,8 +128,8 @@ The `EventBusClientOptions` is used to configure the EventBusClient during creat
 
 * `host`: String, the host of the bridge to connect to, defaults to `localhost`.
 * `port`: int, the port of the bridge to connect to, defaults to `-1`, which means `7000` for TCP bridge and `80` for WebSocket SockJS bridge.
-* `websocketPath`: String, the path connect the WebSocket client to, defaults to `/eventbus/websocket`. It is used only by the WebSocket EventBus Client.
-* `websocketMaxWebsocketFrameSize`: int, the maximum websocket frame size, defaults to `65536`. It is used only by the WebSocket EventBus Client.
+* `webSocketPath`: String, the path connect the WebSocket client to, defaults to `/eventbus/websocket`. It is used only by the WebSocket EventBus Client.
+* `maxWebSocketFrameSize`: int, the maximum WebSocket frame size, defaults to `65536`. It is used only by the WebSocket EventBus Client.
 * `ssl`: boolean, indicates if SSL is enabled, defaults to `false`, which means SSL is not enabled.
 * `trustStorePath`: String, the path of the trust store. It is used only when `ssl` is true.
 * `trustStorePassword`: String, the password of the trust store. It is used only when `ssl` is true.

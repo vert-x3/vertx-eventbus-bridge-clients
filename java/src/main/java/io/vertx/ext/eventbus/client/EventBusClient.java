@@ -120,10 +120,10 @@ public class EventBusClient {
   private DeliveryOptions defaultOptions = new DeliveryOptions();
   private final Transport transport;
   private final NioEventLoopGroup group = new NioEventLoopGroup(1);
-  private Bootstrap bootstrap;
+  private final Bootstrap bootstrap;
   private final EventBusClientOptions options;
   private final JsonCodec codec;
-  private InternalLogger logger;
+  private final InternalLogger logger;
 
   private final ConcurrentMap<String, HandlerList> consumerMap = new ConcurrentHashMap<String, HandlerList>();
   private ScheduledFuture<?> pingPeriodic;
@@ -147,7 +147,7 @@ public class EventBusClient {
     this.logger = InternalLoggerFactory.getInstance(EventBusClient.class);
   }
 
-  private ArrayDeque<Handler<Transport>> pendingTasks = new ArrayDeque<Handler<Transport>>();
+  private final ArrayDeque<Handler<Transport>> pendingTasks = new ArrayDeque<Handler<Transport>>();
 
   private synchronized void execute(Handler<Transport> task) {
     if (connected) {
@@ -241,7 +241,7 @@ public class EventBusClient {
     }
 
     String host = EventBusClient.this.options.getHost();
-    Integer port = EventBusClient.this.options.getPort();
+    int port = EventBusClient.this.options.getPort();
 
     if (EventBusClient.this.options.getProxyHost() != null) {
       logger.info("Connecting to bridge at " + host + ":" + port + " (via " + EventBusClient.this.options.getProxyHost() + ") using " + this.transport.getClass().getSimpleName() + "...");
@@ -447,8 +447,6 @@ public class EventBusClient {
         public String address() {
           return replyAddr;
         }
-
-        ;
 
         @Override
         public void handleMessage(Message<T> msg) {

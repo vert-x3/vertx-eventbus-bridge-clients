@@ -26,6 +26,11 @@ To use this project, add the following dependency to the _dependencies_ section 
   <artifactId>vertx-eventbus-client</artifactId>
   <version>${maven.version}</version>
 </dependency>
+<dependency>
+  <groupId>com.google.code.gson</groupId>
+  <artifactId>gson</artifactId>
+  <version>${gson.version}</version>
+</dependency>
 ----
 
 * Gradle (in your `build.gradle` file):
@@ -33,6 +38,7 @@ To use this project, add the following dependency to the _dependencies_ section 
 [source,groovy,subs="+attributes"]
 ----
 compile 'io.vertx:vertx-eventbus-client:${maven.version}'
+compile 'com.google.code.gson:gson:${gson.version}'
 ----
 
 == Creating the Vert.x EventBus Client
@@ -93,7 +99,7 @@ Messages can be published to an address of the EventBus.
 
 === Creating a consumer and register it against an address
 
-It is possible to create a consumer and register it on an address of the EventBus, it will be called
+You can create a consumer and register it on an address of the EventBus, it will be called
 when there are any messages sent to that address.
 
 ```
@@ -102,7 +108,7 @@ when there are any messages sent to that address.
 
 === Unregistering a consumer from its address
 
-It is possible to unregister the consumer from its address when it does not need to listen on that anymore.
+You can unregister the consumer from its address when it does not need to listen on that anymore.
 
 ```
 {@link examples.ClientExamples#example05}
@@ -110,7 +116,7 @@ It is possible to unregister the consumer from its address when it does not need
 
 == Closing the Client
 
-The client can be closed to release the connection to the bridge server.
+You can close the client to release the connection to the bridge server.
 
 ```
 {@link examples.ClientExamples#example06}
@@ -122,20 +128,20 @@ The client and the bridge exchange messages in a custom JSON format encoded usin
 client ships two `JsonCodec` implementations.
 
 When creating a new `EventBusClient` instance without specifying `JsonCodec`, it tries to load `GsonCodec` first, if Gson
-is not in the classpath, it turns to load `JacksonCodec`, if FasterXML Jackson data-bind is not in classpath either,
+is not in the classpath, it tries to load `JacksonCodec`, if FasterXML Jackson data-bind is not in classpath either,
 it fails to create the client instance.
 
-User can specify their own implementation of `JsonCodec` when creating a new `EventBusClient` instance as well.
+You can specify a custom instance of `JsonCodec` when creating a new `EventBusClient` instance as well.
 
 === GsonCodec
 
 The `JsonCodec` implementation based on link:https://github.com/google/gson[Google Gson project].
-The dependency of `com.google.code.gson:gson` is optional, users need to add this dependency explicitly to use this implementation.
+The dependency of `com.google.code.gson:gson` is optional, you need to add this dependency explicitly to use this implementation.
 
 === JacksonCodec
 
 The `JsonCodec` implementation based on link:https://github.com/FasterXML/jackson-databind[FasterXML Jackson databind].
-The dependency of `com.fasterxml.jackson.core:jackson-databind` is optional, users need to add this dependency explicitly to use this implementation.
+The dependency of `com.fasterxml.jackson.core:jackson-databind` is optional, you need to add this dependency explicitly to use this implementation.
 
 
 == EventBus Client Options

@@ -1,4 +1,4 @@
-= Vert.x EventBus Client
+= Vert.x EventBus Bridge Client
 
 Vert.x EventBus Client is a Java client allowing applications to interact with a Vert.x EventBus bridge
 via either TCP or WebSocket transport. After connection, it allows:
@@ -23,7 +23,7 @@ To use this project, add the following dependency to the _dependencies_ section 
 ----
 <dependency>
   <groupId>io.vertx</groupId>
-  <artifactId>vertx-eventbus-client</artifactId>
+  <artifactId>vertx-eventbus-bridge-client</artifactId>
   <version>${maven.version}</version>
 </dependency>
 <dependency>
@@ -37,7 +37,7 @@ To use this project, add the following dependency to the _dependencies_ section 
 
 [source,groovy,subs="+attributes"]
 ----
-compile 'io.vertx:vertx-eventbus-client:${maven.version}'
+compile 'io.vertx:vertx-eventbus-bridge-client:${maven.version}'
 compile 'com.google.code.gson:gson:${gson.version}'
 ----
 

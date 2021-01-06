@@ -32,10 +32,10 @@
     <asciidoc.dir>${project.basedir}/src/main/asciidoc</asciidoc.dir>
   </properties>
 
-  <artifactId>vertx-eventbus-client</artifactId>
+  <artifactId>vertx-eventbus-bridge-client</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 
-  <name>Vert.x Event Bus Client</name>
+  <name>Vert.x Event Bus Bridge Client</name>
 
   <dependencies>
     <dependency>

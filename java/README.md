@@ -1,6 +1,5 @@
-# Vert.x EventBus Java Client
+# Vert.x EventBus Bridge Java Client
 
-## Todo
+A Vert.x EventBus Bridge Java client for Java 6 or greater.
 
-- handle failures in handler
-- client replies
+This client does not depend on the Vert.x stack.

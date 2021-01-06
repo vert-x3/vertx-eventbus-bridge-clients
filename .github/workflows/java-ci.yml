@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        jdk: [6, 8, 11]
+        jdk: [1.6, 8, 11]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout

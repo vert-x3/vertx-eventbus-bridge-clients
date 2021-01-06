@@ -4,11 +4,13 @@ on:
     branches:
       - master
     paths:
+      - .github/**
       - java/**
   pull_request:
     branches:
       - master
     paths:
+      - .github/**
       - java/**
   schedule:
     - cron:  '* 4 * * *'

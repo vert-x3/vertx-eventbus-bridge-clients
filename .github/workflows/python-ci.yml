@@ -1,0 +1,39 @@
+name: Python CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - python/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - python/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: python
+jobs:
+  Build_Python_Client:
+    name: Build Python Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Run Python build
+        run: python3 setup.py sdist
+      - name: Get project version
+        run: echo "PROJECT_VERSION=$(cat setup.py |grep "version="|cut -d "'" -f2)" >> $GITHUB_ENV
+      - name: Deploy to PyPI
+        if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' && !contains(env.PROJECT_VERSION, '.dev') }}
+        uses: pypa/gh-action-pypi-publish@v1.4.1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: python/dist

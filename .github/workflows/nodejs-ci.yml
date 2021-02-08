@@ -1,0 +1,40 @@
+name: Node CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - nodejs/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - nodejs/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: nodejs
+jobs:
+  Build_NodeJs_Client:
+    name: Build Nodejs Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - run: npm install
+      - run: npm pack
+      - name: Get project version
+        run: echo "PROJECT_VERSION=$(head -n 5 package.json |grep "version"|cut -d "\"" -f4)" >> $GITHUB_ENV
+      - name: Deploy TCP EventBus Client to NPM
+        if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' && !endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          check-version: true
+          package: nodejs/package.json
+          access: public

@@ -1,0 +1,42 @@
+name: C Sharp CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - C#/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - C#/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: C#/vertx-eventbus
+jobs:
+  Build_CSharp_Client:
+    name: Build C# Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '5.0.x'
+      - name: Run dotnet restore
+        run: dotnet restore
+      - name: Run dotnet build & test
+        run: dotnet build --no-restore
+      - name: Get project version
+        run: echo "PROJECT_VERSION=$(head -10 vertx-eventbus.csproj |grep "<Version>"|cut -d ">" -f2|cut -d "<" -f1)" >> $GITHUB_ENV
+      - name: Pack and Deploy to NuGet
+        if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' && !endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
+        uses: brandedoutcast/publish-nuget@v2
+        with:
+          PROJECT_FILE_PATH: C#/vertx-eventbus/vertx-eventbus.csproj
+          NUGET_KEY: ${{ secrets.NUGET_API_KEY }}
+          TAG_COMMIT: false
+          INCLUDE_SYMBOLS: true

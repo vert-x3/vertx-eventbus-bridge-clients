@@ -1,11 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <PackageId>vertx.eventbus.client</PackageId>
+    <Version>1.0.0-SNAPSHOT</Version>
+    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1;net48</TargetFrameworks>
+    <Authors>The Vertx Team</Authors>
+    <Company>Red Hat</Company>
+    <PackageDescription>The Vert.x TCP EventBus Client</PackageDescription>
+    <RepositoryUrl>https://github.com/vert-x3/vertx-eventbus-bridge-clients</RepositoryUrl>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <Compile Remove="test\**" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(Configuration)' == 'Debug' ">
     <!-- Test Dependencies -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
     <PackageReference Include="xunit" Version="2.2.0" />

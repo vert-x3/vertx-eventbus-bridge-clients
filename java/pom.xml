@@ -195,7 +195,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>io/vertx/ext/eventbus/client/it/*.java</exclude>
+            <exclude>io/vertx/eventbusclient/it/*.java</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -213,7 +213,7 @@
             </goals>
             <configuration>
               <includes>
-                <include>io/vertx/ext/eventbus/client/it/GsonCodecTest.java</include>
+                <include>io/vertx/eventbusclient/it/GsonCodecTest.java</include>
               </includes>
               <systemProperties>
                 <vertx-test-alpn-jdk>false</vertx-test-alpn-jdk>
@@ -233,7 +233,7 @@
             </goals>
             <configuration>
               <includes>
-                <include>io/vertx/ext/eventbus/client/it/JacksonCodecTest.java</include>
+                <include>io/vertx/eventbusclient/it/JacksonCodecTest.java</include>
               </includes>
               <systemProperties>
                 <vertx-test-alpn-jdk>false</vertx-test-alpn-jdk>
@@ -252,7 +252,7 @@
             </goals>
             <configuration>
               <includes>
-                <include>io/vertx/ext/eventbus/client/it/NoCodecTest.java</include>
+                <include>io/vertx/eventbusclient/it/NoCodecTest.java</include>
               </includes>
               <systemProperties>
                 <vertx-test-alpn-jdk>false</vertx-test-alpn-jdk>

@@ -1,12 +1,12 @@
 package examples;
 
 import io.vertx.docgen.Source;
-import io.vertx.ext.eventbus.client.AsyncResult;
-import io.vertx.ext.eventbus.client.EventBusClient;
-import io.vertx.ext.eventbus.client.EventBusClientOptions;
-import io.vertx.ext.eventbus.client.Handler;
-import io.vertx.ext.eventbus.client.Message;
-import io.vertx.ext.eventbus.client.MessageConsumer;
+import io.vertx.eventbusclient.AsyncResult;
+import io.vertx.eventbusclient.EventBusClient;
+import io.vertx.eventbusclient.EventBusClientOptions;
+import io.vertx.eventbusclient.Handler;
+import io.vertx.eventbusclient.Message;
+import io.vertx.eventbusclient.MessageConsumer;
 
 @Source
 public class ClientExamples {

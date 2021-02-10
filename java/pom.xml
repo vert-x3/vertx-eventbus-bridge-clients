@@ -281,10 +281,10 @@
                 </annotationProcessors>
                 <compilerArgs>
                   <arg>-Adocgen.source=${asciidoc.dir}</arg>
-                  <arg>-Adocgen.output=${project.build.directory}/asciidoc</arg>
+                  <arg>-Adocgen.output=${project.basedir}/docs</arg>
                   <arg>-Amaven.groupId=${project.groupId}</arg>
                   <arg>-Amaven.artifactId=${project.artifactId}</arg>
-                  <arg>-Amaven.version=${project.version}</arg>
+                  <arg>-Amaven.version=1.0.1</arg>
                 </compilerArgs>
               </configuration>
             </execution>

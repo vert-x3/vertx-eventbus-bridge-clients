@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - '*'
     paths:
       - .github/**
       - python/**
@@ -32,7 +34,7 @@ jobs:
       - name: Get project version
         run: echo "PROJECT_VERSION=$(cat setup.py |grep "version="|cut -d "'" -f2)" >> $GITHUB_ENV
       - name: Deploy to PyPI
-        if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' && !contains(env.PROJECT_VERSION, '.dev') }}
+        if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && !contains(env.PROJECT_VERSION, '.dev') }}
         uses: pypa/gh-action-pypi-publish@v1.4.1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}

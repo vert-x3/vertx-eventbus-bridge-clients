@@ -37,4 +37,4 @@ init:
 	@mkdir -p target/$(CROSS_TRIPLE)
 
 clean:
-	@rm -f target
+	@rm -rf target/$(CROSS_TRIPLE)

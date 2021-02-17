@@ -1,0 +1,54 @@
+name: C Clients CI
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+    paths:
+      - .github/**
+      - C/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - C/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: C
+jobs:
+  Build_C_Clients:
+    name: Build C Clients
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run build
+        run: bash -x build.sh --notty --dist
+      - name: Get project version
+        run: echo "PROJECT_VERSION=$(cat VERSION)" >> $GITHUB_ENV
+      - name: Create a Release
+        if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && !endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+          body: |
+            This is a TCP eventbus implementation for C clients.
+      - name: Upload assets to the release
+        id: upload-release-asset
+        if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && !endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: C/vertx-eventbus-${{ env.PROJECT_VERSION }}.tar.gz
+          asset_name: vertx-eventbus-${{ env.PROJECT_VERSION }}.tar.gz
+          asset_content_type: application/x-gtar

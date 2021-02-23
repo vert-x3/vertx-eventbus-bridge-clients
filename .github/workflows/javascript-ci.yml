@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - master
-    tags:
-      - '*'
     paths:
       - .github/**
       - javascript/**
@@ -28,15 +26,5 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12
-      - run: npm install
-      - run: npm pack
-      - name: Get project version
-        run: echo "PROJECT_VERSION=$(head -n 5 package.json |grep "version"|cut -d "\"" -f4)" >> $GITHUB_ENV
-      - name: Deploy SockJS EventBus Client to NPM
-        if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && !endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
-        uses: JS-DevTools/npm-publish@v1
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          check-version: true
-          package: javascript/package.json
-          access: public
+      - name: Run Javascript build
+        run: bash -x build.sh --dist

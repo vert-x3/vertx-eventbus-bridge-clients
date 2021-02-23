@@ -2,7 +2,13 @@
   "name": "@vertx/eventbus-bridge-client.js",
   "author": "The Vert.x Team",
   "version": "1.0.0-3-SNAPSHOT",
-  "keywords": ["websockets", "websocket", "sockjs", "eventbus", "vert.x"],
+  "keywords": [
+    "websockets",
+    "websocket",
+    "sockjs",
+    "eventbus",
+    "vert.x"
+  ],
   "repository": {
     "type": "git",
     "url": "git@github.com:vert-x3/vertx-eventbus-bridge-clients.git"
@@ -16,6 +22,6 @@
     "README.md"
   ],
   "dependencies": {
-    "sockjs-client":"^1.5.0"
+    "sockjs-client": "^1.5.0"
   }
 }

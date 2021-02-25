@@ -40,7 +40,7 @@ example:
 In order to use it in your project just link against the DLL `vertx-eventbus`. To build it use the `Docker` script. E.g.:
 
 ```sh
-docker run --rm -v $(pwd):/workdir:Z -it microsoft/dotnet:latest /workdir/vertx-eventbus/build.sh
+docker run --rm -v $(pwd):/workdir:Z -it mcr.microsoft.com/dotnet/sdk:latest /workdir/vertx-eventbus/build.sh
 ```
 
 There is a working example under `examples/client.cs`.

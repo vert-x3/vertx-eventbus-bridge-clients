@@ -1,0 +1,30 @@
+name: Javascript CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - javascript/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - javascript/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: javascript
+jobs:
+  Build_Javascript_Client:
+    name: Build JavaScript Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Run Javascript build
+        run: bash -x build.sh --dist

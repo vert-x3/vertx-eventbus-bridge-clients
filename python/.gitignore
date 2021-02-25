@@ -29,3 +29,4 @@ cscope.*
 node_modules
 dist
 ./MANIFEST
+*.egg-info

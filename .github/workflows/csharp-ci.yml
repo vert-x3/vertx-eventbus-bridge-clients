@@ -1,0 +1,30 @@
+name: C Sharp CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - C#/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - C#/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: C#/vertx-eventbus
+jobs:
+  Build_CSharp_Client:
+    name: Build C# Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '5.0.x'
+      - name: Run dotnet build
+        run: bash -x build.sh --dist

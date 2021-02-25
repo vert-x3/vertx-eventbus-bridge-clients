@@ -1,0 +1,27 @@
+name: C Clients CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - C/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - C/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: C
+jobs:
+  Build_C_Clients:
+    name: Build C Clients
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run build
+        run: bash -x build.sh --notty --dist

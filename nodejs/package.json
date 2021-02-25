@@ -1,12 +1,22 @@
 {
   "name": "vertx3-tcp-eventbus-client",
-  "version": "3.4.0",
+  "version": "1.0.0-SNAPSHOT",
   "description": "Vert.x3 TCP event bus client",
   "dependencies": {
     "node-uuid": "1.4.3"
   },
   "devDependencies": {
     "mocha": "2.3.3"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "tcp bridge",
+    "eventbus",
+    "vert.x"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:vert-x3/vertx-eventbus-bridge-clients.git"
   },
   "lib": "lib",
   "scripts": {

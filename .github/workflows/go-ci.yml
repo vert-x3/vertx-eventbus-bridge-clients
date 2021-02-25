@@ -1,0 +1,32 @@
+name: Go CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - Go/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - Go/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: Go
+jobs:
+  Build_Go_Client:
+    name: Build Go Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.13.1'
+      - name: Set up GOPATH
+        run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+      - name: Run Go Build
+        run: bash -x build.sh

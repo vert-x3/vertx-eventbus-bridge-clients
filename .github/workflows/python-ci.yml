@@ -1,0 +1,31 @@
+name: Python CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - python/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/**
+      - python/**
+  schedule:
+    - cron:  '* 4 * * *'
+defaults:
+  run:
+    working-directory: python
+jobs:
+  Build_Python_Client:
+    name: Build Python Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Run Python build
+        run: bash -x build.sh --dist

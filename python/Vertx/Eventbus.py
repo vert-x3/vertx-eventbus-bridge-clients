@@ -218,10 +218,10 @@ class Eventbus:
 
             if replyAddress == None:
                 message = json.dumps(
-                    {'type': 'send', 'address': address, 'headers': headers, 'body': body, })
+                    {'type': 'publish', 'address': address, 'headers': headers, 'body': body, })
             else:
                 message = json.dumps(
-                    {'type': 'send', 'address': address, 'headers': headers, 'body': body, })
+                    {'type': 'publish', 'address': address, 'headers': headers, 'body': body, })
 
             self.writable = True
             self.sendFrame(message)

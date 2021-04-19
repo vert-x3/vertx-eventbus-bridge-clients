@@ -25,13 +25,13 @@ do.addReplyAddress('add')
 do.setTimeInterval(5)
 
 #register handler
-eb.registerHandler('add',Client.Handler);
+eb.register_handler('add',Client.Handler);
 
 #send
 eb.send('add',body,do)
 
 #close after 5 seconds
-eb.closeConnection(5)
+eb.close_connection(5)
 ```
 
 ## Install locally

@@ -9,7 +9,7 @@ with open(rdm_file, encoding='utf-8') as f:
 setuptools.setup(
     name='vertx-eventbus-client',
     version='1.0.0.dev0',
-    packages=['Vertx'],
+    packages=['vertx'],
     author='vertx-dev',
     author_email='vertx-dev@googlegroups.com',
     url='https://github.com/vert-x3/vertx-eventbus-bridge-clients/tree/master/python',

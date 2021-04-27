@@ -211,18 +211,11 @@ class Eventbus:
         if self.isConnected() is True:
             if deliveryOption != None:
                 headers = deliveryOption.headers
-                replyAddress = deliveryOption.replyAddress
             else:
                 headers = None
-                replyAddress = None
 
-            if replyAddress == None:
-                message = json.dumps(
-                    {'type': 'send', 'address': address, 'headers': headers, 'body': body, })
-            else:
-                message = json.dumps(
-                    {'type': 'send', 'address': address, 'headers': headers, 'body': body, })
-
+            message = json.dumps(
+                    {'type': 'publish', 'address': address, 'headers': headers, 'body': body, })
             self.writable = True
             self.sendFrame(message)
             self.writable = False

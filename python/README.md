@@ -5,41 +5,47 @@ This is a TCP eventbus implementation for python clients.
 example:
 
 ```python
-class Client():
+from vertx import EventBus
 
-#Handler
-  def Handler(self,message):
-    if message != None:
-      print(message['body']['result'],'4');
+ebus = EventBus('localhost', 7000)
 
-eb=Vertx.Eventbus(Client(),'localhost', 7000)
+# Define a handler to handle message
+def handler(msg):
+    print("Got message from server: %s" % msg)
 
-#jsonObject -body
-body={'msg':'add 4 to 0',}
+# Connects to target bridge, it will connect automatically
+ebus.connect()
 
-#DeliveryOption
-do=Vertx.DeliveryOption();
-do.addHeader('type','text')
-do.addHeader('size','small')
-do.addReplyAddress('add')
-do.setTimeInterval(5)
+# register a handler on address `test`
+ebus.register_handler("test", handler)
 
-#register handler
-eb.register_handler('add',Client.Handler);
+# send a json message to address: `test`, the handler will be called
+ebus.send("test", body={'name': 'python'})
 
-#send
-eb.send('add',body,do)
+# You can also send a message, and specify the reply_address
+ebus.send("echo", reply_address="test", body={'desc': 'send to echo, reply to test'})
 
-#close after 5 seconds
-eb.close_connection(5)
+# publish message
+ebus.publish("publish-address", body={'name': 'python'})
+
+# unregister the handler after everything is done
+ebus.unregister_handler("test")
+
+# close the EventBus to release resources, after closed, it cannot be used anymore
+ebus.close()
+
 ```
 
-## Install locally
+## Build and install locally
 
 ```
 # build the package
-python setup.py sdist
+./build.sh --dist
 
 # With the tar file you can install it anywhere
-pip install --user path_to_tarfile.tar.gz
+pip install dist/vertx-eventbus-client*.tar.gz
+
+# Install from PyPI:
+pip install vertx-eventbus-client
 ```
+

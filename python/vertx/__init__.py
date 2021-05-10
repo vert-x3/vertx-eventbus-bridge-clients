@@ -1,1 +1,3 @@
-__all__ =["eventbus","DeliveryOption"]
+from .eventbus import EventBus
+
+__all__ = ["EventBus", "DeliveryOption"]

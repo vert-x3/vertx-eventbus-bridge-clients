@@ -87,10 +87,11 @@ class EventBus:
         self._state = _State.NEW
         self.host = host
         self.port = port
-        self.handlers = {}
+        self.message_handlers = {}
         self.options = options
         self.timeout = 60  # socket timeout, in seconds
         self.ping_interval = 5  # heart beat for ping/pong
+        self.reply_timeout = 60  # message reply timeout, in seconds
         self._err_handler = err_handler
         self.auto_connect = True
         self.max_reconnect = 5
@@ -99,6 +100,8 @@ class EventBus:
         if options is not None:
             if "timeout" in options:
                 self.timeout = int(options["timeout"])
+            if "reply_timeout" in options:
+                self.reply_timeout = int(options["reply_timeout"])
             if "ping_interval" in options:
                 self.ping_interval = int(options["ping_interval"])
             if "auto_connect" in options:
@@ -137,8 +140,8 @@ class EventBus:
                     ping_thread = Thread(target=self._ping)
                     ping_thread.setDaemon(True)
                     ping_thread.start()
-                    for address, handler in self.handlers.items():
-                        if handler.is_at_server():
+                    for address, message_handlers in self.message_handlers.items():
+                        if message_handlers.is_at_server():
                             message = create_message("register", address)
                             self._send_frame(message)
                     break
@@ -199,11 +202,11 @@ class EventBus:
                     if "address" not in message:
                         self._err_handler(message)
                     else:
-                        if message["address"] in self.handlers:
-                            for handler in self.handlers[
+                        if message["address"] in self.message_handlers:
+                            for message_handler in self.message_handlers[
                                 message["address"]
-                            ].all_handlers():
-                                handler(message)
+                            ].all_message_handlers():
+                                message_handler.handle(message)
                         else:
                             LOGGER.warning(
                                 "No handler found on address %s", message["address"]
@@ -224,7 +227,7 @@ class EventBus:
                 else:
                     if e.args[0] == errno.ECONNRESET:
                         self._state = _State.CLOSED
-                        self.handlers.clear()
+                        self.message_handlers.clear()
                         LOGGER.debug("connection reset by server")
                     else:
                         self._state = _State.BROKEN
@@ -232,6 +235,9 @@ class EventBus:
                 break
         if self.auto_connect and self._state != _State.CLOSED:
             self.connect()
+
+    def handlers(self):
+        return self.message_handlers.copy()
 
     def is_connected(self):
         return self._state == _State.CONNECTED
@@ -242,7 +248,7 @@ class EventBus:
                 self._state = _State.CLOSING
                 self.socket.close()
                 self._state = _State.CLOSED
-                self.handlers.clear()
+                self.message_handlers.clear()
             except Exception as e:
                 LOGGER.error("Failed to close the socket", exc_info=e)
 
@@ -264,11 +270,18 @@ class EventBus:
         self, address, headers=None, body=None, reply_address=None, reply_handler=None
     ):
         self._check_closed()
+        the_reply_addr = reply_address
         if reply_handler is not None:
-            reply_address = reply_address or str(uuid.uuid1())
-            self._register_local(reply_address, reply_handler, False)
-        message = create_message("send", address, headers, body, reply_address)
+            the_reply_addr = reply_address or str(uuid.uuid1())
+            self._register_local(the_reply_addr, reply_handler, False)
+        message = create_message("send", address, headers, body, the_reply_addr)
         self._send_frame(message)
+        if reply_handler is not None:
+            if self.message_handlers[the_reply_addr].check_time_out(
+                reply_handler, self.reply_timeout, 0.1
+            ):
+                self._err_handler("reply time out")
+            self.unregister_handler(the_reply_addr, reply_handler)
 
     def publish(self, address, headers=None, body=None):
         self._check_closed()
@@ -276,13 +289,21 @@ class EventBus:
         self._send_frame(message)
 
     def _register_local(self, address, handler, at_server=True):
-        if address in self.handlers:
-            self.handlers[address].append_handler(handler, at_server)
+        message_handler = _MessageHandler(handler)
+        if address in self.message_handlers:
+            self.message_handlers[address].append_message_handler(
+                message_handler, at_server
+            )
         else:
-            self.handlers[address] = _MessageHandlers(handler, at_server)
+            self.message_handlers[address] = _MessageHandlers(
+                message_handler, at_server
+            )
 
     def _address_registered_at_server(self, address):
-        return address in self.handlers and self.handlers[address].is_at_server()
+        return (
+            address in self.message_handlers
+            and self.message_handlers[address].is_at_server()
+        )
 
     def register_handler(self, address, handler):
         """
@@ -312,14 +333,14 @@ class EventBus:
         :param address: the address of the handlers
         :param handler: the optional handler to be un-registered
         """
-        if address in self.handlers:
-            the_handler = self.handlers[address]
+        if address in self.message_handlers:
+            message_handlers = self.message_handlers[address]
             if handler is None:
-                the_handler.clear()
-                del self.handlers[address]
+                message_handlers.clear()
+                del self.message_handlers[address]
             else:
-                the_handler.del_handler(handler)
-            if the_handler.is_at_server() and the_handler.is_empty():
+                message_handlers.del_handler(handler)
+            if message_handlers.is_at_server() and message_handlers.is_empty():
                 try:
                     self._check_closed()
                     message = create_message("unregister", address)
@@ -336,34 +357,72 @@ class _MessageHandlers:
     are in client side only, once message is back, all handlers with same address will be called in sequence.
     """
 
-    def __init__(self, handler, at_server=True):
-        self._handlers = [handler]
+    def __init__(self, message_handler, at_server=True):
+        self._message_handlers = [message_handler]
         self.at_server = at_server
 
-    def append_handler(self, handler, at_server=True):
+    def append_message_handler(self, message_handler, at_server=True):
         """
         Appends the handler if it is not in the list yet, return True if it gets appended, False otherwise
         """
         if at_server:
             self.at_server = True
-        if not self.has_handler(handler):
-            self._handlers.append(handler)
+        if message_handler not in self._message_handlers:
+            self._message_handlers.append(message_handler)
 
     def del_handler(self, handler):
-        if self.has_handler(handler):
-            self._handlers.remove(handler)
-
-    def has_handler(self, handler):
-        return handler in self._handlers
+        self._message_handlers = list(
+            filter(lambda mh: mh.handler() != handler, self._message_handlers)
+        )
 
     def is_at_server(self):
         return self.at_server
 
     def clear(self):
-        self._handlers = []
+        self._message_handlers = []
 
     def is_empty(self):
-        return len(self._handlers) == 0
+        return len(self._message_handlers) == 0
 
-    def all_handlers(self):
-        return self._handlers
+    def all_message_handlers(self):
+        return self._message_handlers
+
+    def check_time_out(self, the_handler, time_out, time_out_step):
+        """
+        check reply timeout for the reply handler using send method.
+        this method blocks until the reply handler gets called or time out.
+        the reply_handler will be removed after it gets called or time out.
+        return True if the_handler does not get called after time_out seconds
+        """
+        # check to see if the handle was called, otherwise, time-out exception
+        the_message_handler = next(
+            filter(lambda mh: mh.handler() == the_handler, self._message_handlers), None
+        )
+        if the_message_handler:
+            time_left = time_out
+            while time_left > 0 and not the_message_handler.handled():
+                time.sleep(time_out_step)
+                time_left = time_left - time_out_step
+            return time_left <= 0
+        else:
+            raise Exception("No registered handler found")
+
+
+class _MessageHandler:
+    """
+    Wrapper handler to handle message
+    """
+
+    def __init__(self, handler):
+        self._handler = handler
+        self._handled = False
+
+    def handler(self):
+        return self._handler
+
+    def handle(self, message):
+        self._handler(message)
+        self._handled = True
+
+    def handled(self):
+        return self._handled

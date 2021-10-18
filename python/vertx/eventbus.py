@@ -90,24 +90,27 @@ class EventBus:
         self.message_handlers = {}
         self.options = options
         self.timeout = 60  # socket timeout, in seconds
+        self.connection_timeout = 600  # connection timeout, in seconds
+        self.retry_interval = 5  # retry interval on connection, in seconds
         self.ping_interval = 5  # heart beat for ping/pong
         self.reply_timeout = 60  # message reply timeout, in seconds
         self._err_handler = err_handler
         self.auto_connect = True
-        self.max_reconnect = 5
         if self._err_handler is None:
             self._err_handler = EventBus._default_err_handler
         if options is not None:
             if "timeout" in options:
                 self.timeout = int(options["timeout"])
+            if "connection_timeout" in options:
+                self.connection_timeout = int(options["connection_timeout"])
+            if "retry_interval" in options:
+                self.retry_interval = int(options["retry_interval"])
             if "reply_timeout" in options:
                 self.reply_timeout = int(options["reply_timeout"])
             if "ping_interval" in options:
                 self.ping_interval = int(options["ping_interval"])
             if "auto_connect" in options:
                 self.auto_connect = bool(options["auto_connect"])
-            if "max_reconnect" in options:
-                self.max_reconnect = int(options["max_reconnect"])
             if "connect" in options and bool(options["connect"]):
                 self.connect()
 
@@ -125,11 +128,16 @@ class EventBus:
         if self._state == _State.CLOSED:
             LOGGER.debug("Client has been closed")
             return None
-        num_of_tries = self.max_reconnect if self.auto_connect else 1
-        for i in range(num_of_tries):
+        time_left = self.connection_timeout
+        time_step = self.retry_interval
+        i = 0
+        while self.connection_timeout <= 0 or time_left > 0:
+            i = i + 1
             try:
                 if self._state != _State.CONNECTED:
                     self._state = _State.CONNECTING
+                    if self.socket is not None:
+                        self.socket.close()
                     self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     self.socket.settimeout(self.timeout)
                     self.socket.connect((self.host, self.port))
@@ -147,11 +155,10 @@ class EventBus:
                     break
             except IOError as e:
                 LOGGER.warning(
-                    "Tried to connect %d times, try again.", i + 1, exc_info=e
+                    "Tried to connect %d times, try again.", i, exc_info=e
                 )
-        else:
-            self._state = _State.CLOSED
-            raise Exception("Failed to connect after %d times try" % num_of_tries)
+                time.sleep(time_step)
+                time_left = time_left - time_step
 
     def _ping(self):
         while self.is_connected():
@@ -189,12 +196,12 @@ class EventBus:
             try:
                 len_str = self._receive_chunked(4, 4)
                 if len_str == b"":
-                    self._state = _State.CLOSED
+                    self._state = _State.BROKEN
                     break
                 len1 = struct.unpack("!i", len_str)[0]
                 payload = self._receive_chunked(len1)
                 if payload == b"":
-                    self._state = _State.CLOSED
+                    self._state = _State.BROKEN
                     break
                 json_message = payload.decode("utf-8")
                 message = json.loads(json_message)
@@ -226,7 +233,7 @@ class EventBus:
                     LOGGER.debug("client has been closed")
                 else:
                     if e.args[0] == errno.ECONNRESET:
-                        self._state = _State.CLOSED
+                        self._state = _State.BROKEN
                         self.message_handlers.clear()
                         LOGGER.debug("connection reset by server")
                     else:
@@ -243,7 +250,7 @@ class EventBus:
         return self._state == _State.CONNECTED
 
     def close(self):
-        if self._state != _State.CLOSED:
+        if self._state != _State.CLOSED and self._state != _State.BROKEN:
             try:
                 self._state = _State.CLOSING
                 self.socket.close()

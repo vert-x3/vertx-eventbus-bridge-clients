@@ -101,7 +101,7 @@ class EventBusBridgeStarter:
             raise Exception("failed to start vertx eventbus bridge")
         if self.debug:
             print("wait for start successful after %.3f secs" % (time_out - time_left))
-    
+
     def _handle_output(self):
         """ handle the output of the java program"""
         out = self.process.stderr
@@ -120,7 +120,18 @@ class EventBusBridgeStarter:
     def stop(self):
         if self.started:
             self.process.kill()
+            self.process.wait()
+            self.process = None
             self.started = False
+
+    def start_async(self, delay=5):
+        def _start_internal(_delay=delay):
+            time.sleep(_delay)
+            self.start()
+            self.wait_started()
+        start_thread = Thread(target=_start_internal, args=(delay,))
+        start_thread.daemon = True
+        start_thread.start()
 
 
 class CountDownLatch:
@@ -131,11 +142,11 @@ class CountDownLatch:
         self.count = count
         self.condition = Condition()
     
-    def awaits(self, timeout=None):
+    def awaits(self, timeout=None, to_count=0):
         try:
             self.condition.acquire()
             start = datetime.now()
-            while self.count > 0:
+            while self.count > to_count:
                 self.condition.wait(timeout / 10)  # divides each step by 10
                 if timeout is not None:
                     spent = (datetime.now() - start).seconds

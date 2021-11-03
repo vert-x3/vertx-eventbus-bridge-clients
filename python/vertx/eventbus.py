@@ -3,7 +3,7 @@
 # 2016: Jayamine Alupotha https://github.com/jaymine
 # 2020: Wolfgang Fahl https://github.com/WolfgangFahl
 # 2021: Lin Gao https://github.com/gaol
-
+import ssl
 from enum import IntEnum
 import errno
 import logging
@@ -68,7 +68,7 @@ class EventBus:
     Vert.x TCP EventBus Client for Python
     """
 
-    def __init__(self, host="localhost", port=7000, options=None, err_handler=None):
+    def __init__(self, host="localhost", port=7000, options={}, err_handler=None, ssl_context=None):
         """
         EventBus Constructor
 
@@ -89,30 +89,19 @@ class EventBus:
         self.port = port
         self.message_handlers = {}
         self.options = options
-        self.timeout = 60  # socket timeout, in seconds
-        self.connection_timeout = 600  # connection timeout, in seconds
-        self.retry_interval = 5  # retry interval on connection, in seconds
-        self.ping_interval = 5  # heart beat for ping/pong
-        self.reply_timeout = 60  # message reply timeout, in seconds
         self._err_handler = err_handler
-        self.auto_connect = True
+        self.timeout = int(options.get("timeout", "60"))  # socket timeout, in seconds
+        self.connection_timeout = int(options.get("connection_timeout", "600"))  # connection timeout, in seconds
+        self.retry_interval = int(options.get("retry_interval", "5"))  # retry interval on connection, in seconds
+        self.ping_interval = int(options.get("ping_interval", "5"))  # heart beat for ping/pong
+        self.reply_timeout = int(options.get("reply_timeout", "60"))  # message reply timeout, in seconds
+        self.auto_connect = bool(options.get("auto_connect", "True"))
+        self.ssl_options = options.get("ssl_options", {})
+        self.ssl_context = ssl_context
         if self._err_handler is None:
             self._err_handler = EventBus._default_err_handler
-        if options is not None:
-            if "timeout" in options:
-                self.timeout = int(options["timeout"])
-            if "connection_timeout" in options:
-                self.connection_timeout = int(options["connection_timeout"])
-            if "retry_interval" in options:
-                self.retry_interval = int(options["retry_interval"])
-            if "reply_timeout" in options:
-                self.reply_timeout = int(options["reply_timeout"])
-            if "ping_interval" in options:
-                self.ping_interval = int(options["ping_interval"])
-            if "auto_connect" in options:
-                self.auto_connect = bool(options["auto_connect"])
-            if "connect" in options and bool(options["connect"]):
-                self.connect()
+        if "connect" in options and bool(options["connect"]):
+            self.connect()
 
     def __enter__(self):
         return self
@@ -124,10 +113,60 @@ class EventBus:
     def _default_err_handler(message):
         LOGGER.error("Got Error Message: %s from server", message)
 
+    def ssl_wrap_context(self, sock):
+        if not self.ssl_options and self.ssl_context is None:
+            return sock
+
+        if self.ssl_context is not None:
+            if self.ssl_context.verify_mode is not ssl.CERT_NONE:
+                return self.ssl_context.wrap_socket(sock, server_hostname=self.host)
+            else:
+                return self.ssl_context.wrap_socket(sock)
+
+        s_context = ssl.create_default_context()
+        s_context.load_default_certs()
+        cafile = self.ssl_options.get("ca_file")
+        capath = self.ssl_options.get("ca_path")
+        cadata = self.ssl_options.get("ca_data")
+        if "ciphers" in self.ssl_options:
+            s_context.set_ciphers(self.ssl_options["ciphers"])
+        if "check_hostname" in self.ssl_options:
+            s_context.check_hostname = bool(self.ssl_options["check_hostname"])
+        else:
+            if cafile is not None or capath is not None or cadata is not None:
+                s_context.check_hostname = True
+            else:
+                s_context.check_hostname = False
+        if "verify_mode" in self.ssl_options:
+            s_context.verify_mode = self.ssl_options["verify_mode"]
+        else:
+            if cafile is not None or capath is not None or cadata is not None or s_context.check_hostname:
+                s_context.verify_mode = ssl.CERT_REQUIRED
+            else:
+                s_context.verify_mode = ssl.CERT_NONE
+        if cafile is not None or capath is not None or cadata is not None:
+            s_context.load_verify_locations(cafile=cafile, capath=capath, cadata=cadata)
+        cert_file = self.ssl_options.get("cert_file")
+        key_file = self.ssl_options.get("key_file")
+        key_pass = self.ssl_options.get("key_password")
+        if cert_file is not None:
+            if key_pass is not None:
+                s_context.load_cert_chain(certfile=cert_file, keyfile=key_file, password=key_pass)
+            else:
+                s_context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+
+        if s_context.verify_mode is not ssl.CERT_NONE:
+            return s_context.wrap_socket(sock, server_hostname=self.host)
+        else:
+            return s_context.wrap_socket(sock)
+
     def connect(self):
         if self._state == _State.CLOSED:
-            LOGGER.debug("Client has been closed")
-            return None
+            LOGGER.info("Client has been closed")
+            return
+        if self._state == _State.CONNECTED:
+            LOGGER.info("Client has been connected")
+            return
         time_left = self.connection_timeout
         time_step = self.retry_interval
         i = 0
@@ -138,8 +177,9 @@ class EventBus:
                     self._state = _State.CONNECTING
                     if self.socket is not None:
                         self.socket.close()
-                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    self.socket.settimeout(self.timeout)
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(self.timeout)
+                    self.socket = self.ssl_wrap_context(sock)
                     self.socket.connect((self.host, self.port))
                     self._state = _State.CONNECTED
                     receiving_thread = Thread(target=self._receive)
@@ -153,6 +193,14 @@ class EventBus:
                             message = create_message("register", address)
                             self._send_frame(message)
                     break
+            except ssl.SSLError as e:
+                self._state = _State.BROKEN
+                if self.socket is not None:
+                    self.socket.close()
+                LOGGER.error(
+                    "Failed to connect to %s:%d", self.host, self.port, exc_info=e
+                )
+                break
             except IOError as e:
                 LOGGER.warning(
                     "Tried to connect %d times, try again.", i, exc_info=e

@@ -14,6 +14,7 @@ from subprocess import Popen, PIPE
 import tempfile
 from threading import Thread, Condition
 import requests
+import json
 
 STARTER_FAIL_INDICATOR = "Failed to start the TCP EventBus Bridge"
 DEFAULT_WAIT_FOR = "Welcome to use EventBus Starter"
@@ -21,7 +22,8 @@ JAR_URL_TEMPLATE = "https://github.com/gaol/test-eventbus-bridge/releases/downlo
 
 
 _FAT_JARS_ = {'1.0.0': '05cd3e187bf516db4685abb15c9bf983',
-              '1.0.1': 'a5c837430e98357c5ee5e533cf22b5e9'}
+              '1.0.1': 'a5c837430e98357c5ee5e533cf22b5e9',
+              '1.0.3': 'f78e740a534625142724eadcbc810f35'}
 
 
 class EventBusBridgeStarter:
@@ -29,7 +31,7 @@ class EventBusBridgeStarter:
     An Vertx EventBus Bridge Starter, used to start a bridge server for integration testing
     """
     
-    def __init__(self, jar_version='1.0.1', port=7000, wait_for=DEFAULT_WAIT_FOR, debug=False, conf=None):
+    def __init__(self, jar_version='1.0.3', port=7000, wait_for=DEFAULT_WAIT_FOR, debug=False, conf=None):
         """
         construct me
 
@@ -70,8 +72,12 @@ class EventBusBridgeStarter:
                 exit(1)
             if self.conf is None:
                 self.process = Popen(['java', '-jar', self.jar_file], stderr=PIPE)
-            elif type(self.conf) is dict or os.path.exists(self.conf):
-                self.process = Popen(['java', '-jar', '-conf', self.conf, self.jar_file], stderr=PIPE)
+            elif os.path.exists(str(self.conf)):
+                self.process = Popen(['java', '-jar', self.jar_file, '-conf', str(self.conf)], stderr=PIPE)
+            elif type(self.conf) is dict:
+                self.process = Popen(['java', '-jar', self.jar_file, '-conf', json.dumps(self.conf)], stderr=PIPE)
+            else:
+                raise Exception("Wrong argument of -conf: %s" % str(self.conf))
             t = Thread(target=self._handle_output)
             t.daemon = True  # thread dies with the program
             t.start()

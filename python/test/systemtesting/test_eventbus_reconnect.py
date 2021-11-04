@@ -69,7 +69,7 @@ class EventBusClientReconnectTests(unittest.TestCase):
             starter.wait_started()
             print("ebus should get connected automatically and the handler gets registered again.")
             ebus.send("echo", reply_address="echo-back", body={'hello': 'world'})
-            latch.awaits(5)
+            latch.awaits(10)
         finally:
             print("close the client now...")
             ebus.close()

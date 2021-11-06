@@ -8,7 +8,7 @@ with open(rdm_file, encoding="utf-8") as f:
 
 setuptools.setup(
     name="vertx-eventbus-client",
-    version="1.0.0.dev0",
+    version="1.0.0",
     packages=["vertx"],
     author="vertx-dev",
     author_email="vertx-dev@googlegroups.com",

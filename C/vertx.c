@@ -266,7 +266,7 @@ void recieve_frame(void * i){
 		  
             if (FD_ISSET (SendingSocket, &read_fd_set)){
                 //lock
-                char length_buffer[4];
+                unsigned char length_buffer[4];
                 retVal = osi_socket_read(SendingSocket, length_buffer, 4);
                 if ( retVal > 0 ){
                     unsigned int num=0,num1=0,num2=0,num3=0;

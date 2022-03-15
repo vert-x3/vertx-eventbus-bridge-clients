@@ -22,6 +22,6 @@
     "README.md"
   ],
   "dependencies": {
-    "sockjs-client": "^1.5.0"
+    "sockjs-client": "^1.6.0"
   }
 }

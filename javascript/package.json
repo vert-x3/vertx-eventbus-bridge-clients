@@ -1,7 +1,7 @@
 {
   "name": "@vertx/eventbus-bridge-client.js",
   "author": "The Vert.x Team",
-  "version": "1.0.0-3-SNAPSHOT",
+  "version": "1.0.0-3",
   "keywords": [
     "websockets",
     "websocket",

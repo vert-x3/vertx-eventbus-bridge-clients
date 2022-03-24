@@ -41,6 +41,9 @@ The sync takes some time, so you will need to check later. The log should end wi
 
 ## Changelog
 
+### 1.0.0-3
+* Updated sockjs-client to 1.6.0
+
 ### 1.0.0-2
 * Fixed README
 

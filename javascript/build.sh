@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/env bash
 set -e
 cwd=$(cd `dirname $0` && pwd)
 cd $cwd
@@ -23,7 +23,6 @@ done
 
 echo -e "Build the project"
 npm install
-npm build
 
 if [ $dist -eq 1 -o $publish -eq 1 ]; then
   echo -e "Package the project"

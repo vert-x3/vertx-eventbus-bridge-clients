@@ -42,7 +42,7 @@ def create_err_message(address, failure_code, message):
         raise Exception("All address, failure_code and message are required.")
     return json.dumps(
         {
-            "type": "send",
+            "type": "publish",
             "address": address,
             "failureCode": failure_code,
             "message": message,
@@ -329,7 +329,7 @@ class EventBus:
         if reply_handler is not None:
             the_reply_addr = reply_address or str(uuid.uuid1())
             self._register_local(the_reply_addr, reply_handler, False)
-        message = create_message("send", address, headers, body, the_reply_addr)
+        message = create_message("publish", address, headers, body, the_reply_addr)
         self._send_frame(message)
         if reply_handler is not None:
             if self.message_handlers[the_reply_addr].check_time_out(

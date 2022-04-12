@@ -1,3 +1,3 @@
-# github.com/vert-x3/vertx-eventbus-bridge-clients/Go/eventbus
+# Go Client
 
-This is the package you should be using in your Go clients.
+[This](https://github.com/vert-x3/vertx-eventbus-bridge-clients/tree/master/Go/eventbus) is the package you should be using in your **Go clients**.

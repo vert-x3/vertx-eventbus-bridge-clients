@@ -26,6 +26,6 @@ public class TcpEventBusBridgeEchoServer {
             .addInboundPermitted(new PermittedOptions().setAddress("echo"))
             .addOutboundPermitted(new PermittedOptions().setAddress("echo")));
 
-    bridge.listen(7000, res -> System.out.println("Ready"));
+    bridge.listen(7000, res -> System.out.println("Listening at port 7000"));
   }
 }

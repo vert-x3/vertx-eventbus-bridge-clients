@@ -31,7 +31,7 @@ public class Server extends AbstractVerticle{
 		if (res.succeeded()) {
 			System.out.println("Started");
 		} else {
-			System.out.println("Failed");
+			System.out.println("failed");
 		}
 	});
 	EventBus eb = vertx.eventBus();

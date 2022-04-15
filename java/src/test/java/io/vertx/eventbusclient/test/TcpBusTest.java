@@ -195,7 +195,7 @@ public class TcpBusTest {
       }
     }));
     vertx.eventBus().consumer("send_to_client", msg -> {
-      vertx.eventBus().request("client_addr", new JsonObject().put("message", "hello"));
+      vertx.eventBus().send("client_addr", new JsonObject().put("message", "hello"));
     });
     client.send("send_to_client", Collections.emptyMap());
     Async async2 = ctx.async();

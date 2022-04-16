@@ -29,9 +29,9 @@ public class Server extends AbstractVerticle{
 
 	bridge.listen(7000, res -> {
 		if (res.succeeded()) {
-			System.out.println("Started");
+		System.out.println("Started");
 		} else {
-			System.out.println("failed");
+		System.out.println("failed");
 		}
 	});
 	EventBus eb = vertx.eventBus();

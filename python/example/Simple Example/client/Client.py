@@ -2,8 +2,8 @@ import Vertx.Eventbus as Eventbus
 import Vertx.DeliveryOption as DeliveryOption
 import json
 
-# replyHanlder (self,error,message)
-# handlers (self,message)
+#replyHanlder (self,error,message)
+#handlers (self,message)
 
 
 class Client:
@@ -23,7 +23,7 @@ class Client:
 
 eb = Eventbus.Eventbus('localhost', 7000)
 
-# jsonObject -body
+#jsonObject -body
 body = {'msg': 'hi server!', }
 
 # DeliveryOption

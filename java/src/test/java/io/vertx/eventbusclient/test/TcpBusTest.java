@@ -200,7 +200,7 @@ public class TcpBusTest {
     client.send("send_to_client", Collections.emptyMap());
     Async async2 = ctx.async();
     vertx.eventBus().consumer("send_to_client_fail", msg -> {
-      vertx.eventBus().send("client_addr", new JsonObject().put("message", "hello"), ar -> {
+      vertx.eventBus().request("client_addr", new JsonObject().put("message", "hello"), ar -> {
         ctx.assertFalse(ar.succeeded());
         ReplyException err = (ReplyException) ar.cause();
         ctx.assertEquals(ReplyFailure.NO_HANDLERS, err.failureType());

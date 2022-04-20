@@ -65,13 +65,13 @@ public class WebSocketBusTest extends TcpBusTest {
     Router bridgeRouter = ebHandler.bridge(opts);
     router.mountSubRouter("/eventbus-test/", bridgeRouter);
     HttpServer server = vertx.createHttpServer(new HttpServerOptions().setMaxWebSocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebSocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE))
-      .requestHandler(router::accept)
+      .requestHandler(router)
       .listen(7000, ctx.asyncAssertSuccess());
 
     vertx.createHttpServer(new HttpServerOptions().setMaxWebSocketFrameSize(MAX_WEBSOCKET_FRAME_SIZE).setMaxWebSocketMessageSize(MAX_WEBSOCKET_FRAME_SIZE).setSsl(true).setKeyStoreOptions(
       new JksOptions().setPath("server-keystore.jks").setPassword("wibble")
     ))
-      .requestHandler(router::accept)
+      .requestHandler(router)
       .listen(7001, ctx.asyncAssertSuccess());
 
     ctx.put("bridge", server);

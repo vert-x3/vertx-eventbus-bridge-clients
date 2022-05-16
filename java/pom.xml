@@ -32,7 +32,7 @@
   </scm>
 
   <properties>
-    <netty.version>4.1.74.Final</netty.version>
+    <netty.version>4.1.77.Final</netty.version>
     <gson.version>2.2.4</gson.version>
     <jackson.version>2.13.1</jackson.version>
     <vertx.version>4.2.7</vertx.version>

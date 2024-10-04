@@ -102,6 +102,8 @@ public class EventBusClientOptions {
   private String webSocketPath;
   private int maxWebSocketFrameSize;
 
+  private String localAddress;
+
   /**
    * Default constructor
    */
@@ -541,5 +543,24 @@ public class EventBusClientOptions {
     Objects.requireNonNull(proxyType, "Proxy proxyType may not be null");
     this.proxyType = proxyType;
     return this;
+  }
+
+  /**
+   * Set the local interface to bind for network connections. When the local address is null,
+   * it will pick any local address, the default local address is null.
+   *
+   * @param localAddress the local address
+   * @return a reference to this, so the API can be used fluently
+   */
+  public EventBusClientOptions setLocalAddress(String localAddress) {
+    this.localAddress = localAddress;
+    return this;
+  }
+
+  /**
+   * @return the local interface to bind for network connections.
+   */
+  public String getLocalAddress() {
+    return localAddress;
   }
 }

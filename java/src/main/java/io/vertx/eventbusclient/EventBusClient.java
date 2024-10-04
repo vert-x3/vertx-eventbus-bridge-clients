@@ -230,6 +230,10 @@ public class EventBusClient {
       }
     });
 
+    if (options.getLocalAddress() != null) {
+      bootstrap.localAddress(options.getLocalAddress(), 0);
+    }
+
     bootstrap.channel(NioSocketChannel.class);
     bootstrap.handler(transport);
   }

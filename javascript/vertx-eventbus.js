@@ -1,3 +1,4 @@
+'use strict'
 /*
  *   Copyright (c) 2011-2015 The original author or authors
  *   ------------------------------------------------------
@@ -13,64 +14,66 @@
  *
  *   You may elect to redistribute this code under either of these licenses.
  */
-!function (factory) {
+
+let init = () => {
+
   if (typeof require === 'function' && typeof module !== 'undefined') {
     // CommonJS loader
-    var SockJS = require('sockjs-client');
+    const SockJS = require('sockjs-client');
     if (!SockJS) {
       throw new Error('vertx-eventbus.js requires sockjs-client, see http://sockjs.org');
     }
-    factory(SockJS);
   } else if (typeof define === 'function' && define.amd) {
     // AMD loader
-    define('vertx-eventbus', ['sockjs'], factory);
+    define('vertx-eventbus', ['sockjs'], () => { });
   } else {
     // plain old include
     if (typeof this.SockJS === 'undefined') {
       throw new Error('vertx-eventbus.js requires sockjs-client, see http://sockjs.org');
     }
-
-    EventBus = factory(this.SockJS);
   }
-}(function (SockJS) {
+};
 
-  function makeUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (a, b) {
-      return b = Math.random() * 16, (a == 'y' ? b & 3 | 8 : b | 0).toString(16);
-    });
-  }
+const makeUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (a, b) {
+    return b = Math.random() * 16, (a == 'y' ? b & 3 | 8 : b | 0).toString(16);
+  });
+}
 
-  function mergeHeaders(defaultHeaders, headers) {
-    if (defaultHeaders) {
-      if (!headers) {
-        return defaultHeaders;
-      }
+const mergeHeaders = (defaultHeaders, headers) => {
+  if (defaultHeaders) {
+    if (!headers) {
+      return defaultHeaders;
+    }
 
-      for (var headerName in defaultHeaders) {
-        if (defaultHeaders.hasOwnProperty(headerName)) {
-          // user can overwrite the default headers
-          if (typeof headers[headerName] === 'undefined') {
-            headers[headerName] = defaultHeaders[headerName];
-          }
+    for (let headerName in defaultHeaders) {
+      if (defaultHeaders.hasOwnProperty(headerName)) {
+        // user can overwrite the default headers
+        if (typeof headers[headerName] === 'undefined') {
+          headers[headerName] = defaultHeaders[headerName];
         }
       }
     }
-
-    // headers are required to be a object
-    return headers || {};
   }
 
-  /**
-   * EventBus
-   *
-   * @param url
-   * @param options
-   * @constructor
-   */
-  var EventBus = function (url, options) {
-    var self = this;
+  // headers are required to be a object
+  return headers || {};
+}
+
+
+const EventBus = class EventBus {
+
+  constructor(url, options) {
+    this.self = this;
+    this.SockJS = SockJS;
 
     options = options || {};
+    this.url = url;
+
+    this.CONNECTING = 0;
+    this.OPEN = 1;
+    this.CLOSING = 2;
+    this.CLOSED = 3;
 
     // attributes
     this.pingInterval = options.vertxbus_ping_interval || 5000;
@@ -85,130 +88,131 @@
     this.reconnectDelayMax = options.vertxbus_reconnect_delay_max || 5000;
     this.reconnectExponent = options.vertxbus_reconnect_exponent || 2;
     this.randomizationFactor = options.vertxbus_randomization_factor || 0.5;
-    var getReconnectDelay = function() {
-      var ms = self.reconnectDelayMin * Math.pow(self.reconnectExponent, self.reconnectAttempts);
-      if (self.randomizationFactor) {
-        var rand =  Math.random();
-        var deviation = Math.floor(rand * self.randomizationFactor * ms);
-        ms = (Math.floor(rand * 10) & 1) === 0  ? ms - deviation : ms + deviation;
-      }
-      return Math.min(ms, self.reconnectDelayMax) | 0;
-    };
 
     this.defaultHeaders = null;
 
-    // default event handlers
-    this.onerror = function (err) {
-      try {
-        console.error(err);
-      } catch (e) {
-        // dev tools are disabled so we cannot use console on IE
+    this.setupSockJSConnection();
+  }
+
+  getReconnectDelay() {
+    let ms = this.reconnectDelayMin * Math.pow(this.reconnectExponent, this.reconnectAttempts);
+    if (this.randomizationFactor) {
+      const rand = Math.random();
+      const deviation = Math.floor(rand * this.randomizationFactor * ms);
+      ms = (Math.floor(rand * 10) & 1) === 0 ? ms - deviation : ms + deviation;
+    }
+    return Math.min(ms, this.reconnectDelayMax) | 0;
+  }
+
+  // default event handlers
+  onerror(err) {
+    try {
+      console.error(err);
+    } catch (e) {
+      // dev tools are disabled so we cannot use console on IE
+    }
+  }
+
+
+  onevent(event, message) {
+    return false; // return false to signal that this message is not processed
+  }
+
+  onunhandled(json) {
+    try {
+      if (json.type === 'err')
+        onerror(json);
+      else if (json.event) {
+        console.warn('No handler found for event: %o. Message: %O', json.event, json);
+      } else {
+        console.warn('No handler found for message: ', json);
+      }
+    } catch (e) {
+      // dev tools are disabled so we cannot use console on IE
+    }
+  }
+
+  setupSockJSConnection() {
+    this.sockJSConn = new SockJS(this.url, null, this.options);
+    this.state = this.CONNECTING;
+
+    // handlers and reply handlers are tied to the state of the socket
+    // they are added onopen or when sending, so reset when reconnecting
+    this.handlers = {};
+    this.replyHandlers = {};
+
+    this.sockJSConn.onopen = () => {
+      this.enablePing(true);
+      this.state = this.OPEN;
+      this.onopen && this.onopen();
+      if (this.reconnectTimerID) {
+        this.reconnectAttempts = 0;
+        // fire separate event for reconnects
+        // consistent behavior with adding handlers onopen
+        this.onreconnect && onreconnect();
       }
     };
 
-    this.onevent = function (event, message) {
-      return false; // return false to signal that this message is not processed
-    };
-
-    this.onunhandled = function (json) {
-      try {
-        if (json.type === 'err')
-          self.onerror(json);
-        else if (json.event) {
-          console.warn('No handler found for event: %o. Message: %O', json.event, json);
-        } else {
-          console.warn('No handler found for message: ', json);
-        }
-      } catch (e) {
-        // dev tools are disabled so we cannot use console on IE
+    this.sockJSConn.onclose = (e) => {
+      this.state = this.CLOSED;
+      if (this.pingTimerID) clearInterval(this.pingTimerID);
+      if (this.reconnectEnabled && this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.sockJSConn = null;
+        // set id so users can cancel
+        this.reconnectTimerID = setTimeout(setupSockJSConnection, getReconnectDelay());
+        ++this.reconnectAttempts;
       }
+      this.onclose && this.onclose(e);
     };
 
-    var setupSockJSConnection = function () {
-      self.sockJSConn = new SockJS(url, null, options);
-      self.state = EventBus.CONNECTING;
+    this.sockJSConn.onmessage = (e) => {
+      let json;
 
-      // handlers and reply handlers are tied to the state of the socket
-      // they are added onopen or when sending, so reset when reconnecting
-      self.handlers = {};
-      self.replyHandlers = {};
+      try {
+        json = JSON.parse(e.data);
+      } catch (ex) {
+        json = {
+          type: 'err',
+          failureType: ex.toString(),
+          message: e.data
+        };
+      }
 
-      self.sockJSConn.onopen = function () {
-        self.enablePing(true);
-        self.state = EventBus.OPEN;
-        self.onopen && self.onopen();
-        if (self.reconnectTimerID) {
-          self.reconnectAttempts = 0;
-          // fire separate event for reconnects
-          // consistent behavior with adding handlers onopen
-          self.onreconnect && self.onreconnect();
-        }
-      };
-
-      self.sockJSConn.onclose = function (e) {
-        self.state = EventBus.CLOSED;
-        if (self.pingTimerID) clearInterval(self.pingTimerID);
-        if (self.reconnectEnabled && self.reconnectAttempts < self.maxReconnectAttempts) {
-          self.sockJSConn = null;
-          // set id so users can cancel
-          self.reconnectTimerID = setTimeout(setupSockJSConnection, getReconnectDelay());
-          ++self.reconnectAttempts;
-        }
-        self.onclose && self.onclose(e);
-      };
-
-      self.sockJSConn.onmessage = function (e) {
-        var json;
-
-        try {
-          json = JSON.parse(e.data);
-        } catch(ex) {
-          json = {
-            type: 'err',
-            failureType: ex.toString(),
-            message: e.data
-          };
-        }
-
-        // define a reply function on the message itself
-        if (json.replyAddress) {
-          Object.defineProperty(json, 'reply', {
-            value: function (message, headers, callback) {
-              self.send(json.replyAddress, message, headers, callback);
-            }
-          });
-        }
-
-        if (self.handlers[json.address]) {
-          // iterate all registered handlers
-          var handlers = self.handlers[json.address];
-          for (var i = 0; i < handlers.length; i++) {
-            if (json.type === 'err') {
-              handlers[i]({ failureCode: json.failureCode, failureType: json.failureType, message: json.message });
-            } else {
-              handlers[i](null, json);
-            }
+      // define a reply function on the message itself
+      if (json.replyAddress) {
+        Object.defineProperty(json, 'reply', {
+          value: (message, headers, callback) => {
+            send(json.replyAddress, message, headers, callback);
           }
-        } else if (self.replyHandlers[json.address]) {
-          // Might be a reply message
-          var handler = self.replyHandlers[json.address];
-          delete self.replyHandlers[json.address];
+        });
+      }
+
+      if (this.handlers[json.address]) {
+        // iterate all registered handlers
+        const handlers = this.handlers[json.address];
+        for (let i = 0; i < handlers.length; i++) {
           if (json.type === 'err') {
-            handler({ failureCode: json.failureCode, failureType: json.failureType, message: json.message });
+            handlers[i]({ failureCode: json.failureCode, failureType: json.failureType, message: json.message });
           } else {
-            handler(null, json);
-          }
-        } else {
-          if (!json.event || !self.onevent(json.event, json.message)) {
-            self.onunhandled(json)
+            handlers[i](null, json);
           }
         }
+      } else if (this.replyHandlers[json.address]) {
+        // Might be a reply message
+        const handler = this.replyHandlers[json.address];
+        delete this.replyHandlers[json.address];
+        if (json.type === 'err') {
+          handler({ failureCode: json.failureCode, failureType: json.failureType, message: json.message });
+        } else {
+          handler(null, json);
+        }
+      } else {
+        if (!json.event || !this.onevent(json.event, json.message)) {
+          this.onunhandled(json)
+        }
       }
-    };
-
-    // function cannot be anonymous and self-calling due to pseudo-recursion
-    setupSockJSConnection();
-  };
+    }
+  }
 
   /**
    * Send a message
@@ -218,9 +222,9 @@
    * @param {Object} [headers]
    * @param {Function} [callback]
    */
-  EventBus.prototype.send = function (address, message, headers, callback) {
+  send(address, message, headers, callback) {
     // are we ready?
-    if (this.state !== EventBus.OPEN) {
+    if (this.state !== this.OPEN) {
       throw new Error('INVALID_STATE_ERR');
     }
 
@@ -229,7 +233,7 @@
       headers = {};
     }
 
-    var envelope = {
+    const envelope = {
       type: 'send',
       address: address,
       headers: mergeHeaders(this.defaultHeaders, headers),
@@ -237,24 +241,24 @@
     };
 
     if (callback) {
-      var replyAddress = makeUUID();
+      const replyAddress = makeUUID();
       envelope.replyAddress = replyAddress;
       this.replyHandlers[replyAddress] = callback;
     }
 
     this.sockJSConn.send(JSON.stringify(envelope));
-  };
+  }
 
   /**
-   * Publish a message
-   *
-   * @param {String} address
-   * @param {Object} message
-   * @param {Object} [headers]
-   */
-  EventBus.prototype.publish = function (address, message, headers) {
+  * Publish a message
+  *
+  * @param {String} address
+  * @param {Object} message
+  * @param {Object} [headers]
+  */
+  publish(address, message, headers) {
     // are we ready?
-    if (this.state !== EventBus.OPEN) {
+    if (this.state !== this.OPEN) {
       throw new Error('INVALID_STATE_ERR');
     }
 
@@ -264,7 +268,7 @@
       headers: mergeHeaders(this.defaultHeaders, headers),
       body: message
     }));
-  };
+  }
 
   /**
    * Register a new handler
@@ -273,9 +277,9 @@
    * @param {Object} [headers]
    * @param {Function} callback
    */
-  EventBus.prototype.registerHandler = function (address, headers, callback) {
+  registerHandler(address, headers, callback) {
     // are we ready?
-    if (this.state !== EventBus.OPEN) {
+    if (this.state !== this.OPEN) {
       throw new Error('INVALID_STATE_ERR');
     }
 
@@ -296,7 +300,7 @@
     }
 
     this.handlers[address].push(callback);
-  };
+  }
 
   /**
    * Unregister a handler
@@ -305,13 +309,13 @@
    * @param {Object} [headers]
    * @param {Function} callback
    */
-  EventBus.prototype.unregisterHandler = function (address, headers, callback) {
+  unregisterHandler(address, headers, callback) {
     // are we ready?
-    if (this.state !== EventBus.OPEN) {
+    if (this.state !== this.OPEN) {
       throw new Error('INVALID_STATE_ERR');
     }
 
-    var handlers = this.handlers[address];
+    const handlers = this.handlers[address];
 
     if (handlers) {
 
@@ -320,7 +324,7 @@
         headers = {};
       }
 
-      var idx = handlers.indexOf(callback);
+      const idx = handlers.indexOf(callback);
       if (idx !== -1) {
         handlers.splice(idx, 1);
         if (handlers.length === 0) {
@@ -335,28 +339,23 @@
         }
       }
     }
-  };
+  }
 
   /**
    * Closes the connection to the EventBus Bridge,
    * preventing any reconnect attempts
    */
-  EventBus.prototype.close = function () {
-    this.state = EventBus.CLOSING;
+  close() {
+    this.state = this.CLOSING;
     this.enableReconnect(false);
     this.sockJSConn.close();
-  };
+  }
 
-  EventBus.CONNECTING = 0;
-  EventBus.OPEN = 1;
-  EventBus.CLOSING = 2;
-  EventBus.CLOSED = 3;
-
-  EventBus.prototype.enablePing = function (enable) {
-    var self = this;
+  enablePing(enable) {
+    let self = this;
 
     if (enable) {
-      var sendPing = function () {
+      const sendPing = function () {
         self.sockJSConn.send(JSON.stringify({ type: 'ping' }));
       };
 
@@ -371,26 +370,26 @@
         self.pingTimerID = null;
       }
     }
-  };
-
-  EventBus.prototype.enableReconnect = function (enable) {
-    var self = this;
-
-    self.reconnectEnabled = enable;
-    if (!enable && self.reconnectTimerID) {
-      clearTimeout(self.reconnectTimerID);
-      self.reconnectTimerID = null;
-      self.reconnectAttempts = 0;
-    }
-  };
-
-  if (typeof exports !== 'undefined') {
-    if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = EventBus;
-    } else {
-      exports.EventBus = EventBus;
-    }
-  } else {
-    return EventBus;
   }
-});
+
+  enableReconnect(enable) {
+    this.reconnectEnabled = enable;
+
+    if (!enable && this.reconnectTimerID) {
+      clearTimeout(this.reconnectTimerID);
+      this.reconnectTimerID = null;
+      this.reconnectAttempts = 0;
+    }
+  }
+}
+
+if (typeof exports !== 'undefined') {
+  if (typeof module !== 'undefined' && module.exports) {
+    exports = module.exports = EventBus;
+  } else {
+    exports.EventBus = EventBus;
+  }
+}
+
+init();
+

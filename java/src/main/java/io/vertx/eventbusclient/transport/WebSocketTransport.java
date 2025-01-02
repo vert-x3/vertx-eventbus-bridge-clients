@@ -76,8 +76,12 @@ public class WebSocketTransport extends Transport {
         reading = true;
         if (msg instanceof BinaryWebSocketFrame) {
           BinaryWebSocketFrame frame = (BinaryWebSocketFrame) msg;
-          String json = frame.content().toString(StandardCharsets.UTF_8);
-          messageHandler.handle(json);
+          try {  //TODO: @wjw_note: release BinaryWebSocketFrame Prevent resource leakage!
+            String json = frame.content().toString(StandardCharsets.UTF_8);
+            messageHandler.handle(json);
+          } finally {
+            frame.release();
+          }
         } else {
           System.out.println("Unhandled " + msg);
         }
